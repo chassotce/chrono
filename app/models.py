@@ -6,6 +6,7 @@ from json import load
 from flask import jsonify
 import sqlitebck,sqlite3,datetime
 
+
 class Epreuve(db.Model):
     __tablename_ = 'epreuve'
     id_epreuve = db.Column(db.Integer, primary_key=True)
@@ -21,13 +22,13 @@ class Participant(db.Model):
     nom_monture = db.Column(db.String(32))
     nom_cavalier = db.Column(db.String(32))
     points_init = db.Column(db.Integer,index=True)
-    temps_init = db.Column(db.Time())
+    temps_init = db.Column(db.Integer)
     points_barr = db.Column(db.Integer,index=True)
-    temps_barr = db.Column(db.Time())
+    temps_barr = db.Column(db.Integer)
     points_barr2 = db.Column(db.Integer,index=True)
-    temps_barr2 = db.Column(db.Time())
+    temps_barr2 = db.Column(db.Integer)
     hc = db.Column(db.Boolean())
-    etat = db.Column(db.Enum("undef", "elimine", "abandon"))
+    etat = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat')
     serie = db.Column(db.Integer)
     id_epreuve = db.Column(db.Integer, db.ForeignKey(Epreuve.id_epreuve), nullable=False)
 
@@ -192,7 +193,191 @@ class EpreuveSingle(Resource):
     def options(self):
         return {'Allow' : 'GET,PUT' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET' }
 
+participant_fields = {
+    'num_depart': fields.Integer,
+    'nom_monture': fields.String,
+    'nom_cavalier': fields.String,
+    'points_init': fields.Integer,
+    'temps_init':fields.Integer,
+    'points_barr': fields.Integer,
+    'temps_barr':fields.Integer,
+    'points_barr2': fields.Integer,
+    'temps_barr2':fields.Integer,
+    'hc':fields.Boolean,
+    'etat':fields.String,
+    'serie':fields.Integer,
+    'id_epreuve': fields.Integer,
+    'uri': fields.Url('participant')
+}
+
+class ParticipantList(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('num_depart', type = int, location = 'json')
+        self.reqparse.add_argument('nom_monture', type = str, location = 'json')
+        self.reqparse.add_argument('nom_cavalier', type = str, location = 'json')
+        self.reqparse.add_argument('points_init', type = int, location = 'json')
+        self.reqparse.add_argument('temps_init', type = int, location = 'json')
+        self.reqparse.add_argument('points_barr', type = int, location = 'json')
+        self.reqparse.add_argument('temps_barr', type = int, location = 'json')
+        self.reqparse.add_argument('points_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('temps_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('hc', type =bool, location = 'json')
+        self.reqparse.add_argument('etat', type =str, location = 'json')
+        self.reqparse.add_argument('serie', type =int, location = 'json')
+        self.reqparse.add_argument('id_epreuve', type =int, location = 'json')
+        super(ParticipantList, self).__init__()
+
+    def get(self,id_epreuve):
+        participants = []
+        result = db.session.query(Participant).filter_by(id_epreuve=id_epreuve).all()
+        print result
+        for pa in result:
+            pa = {
+                'id':pa.id_participant,
+                'num_depart': pa.num_depart,
+                'nom_monture': pa.nom_monture,
+                'nom_cavalier': pa.nom_cavalier,
+                'points_init': pa.points_init,
+                'temps_init':pa.temps_init,
+                'points_barr': pa.points_barr,
+                'temps_barr':pa.temps_barr,
+                'points_barr2': pa.points_barr2,
+                'temps_barr2':pa.temps_barr2,
+                'hc':pa.hc,
+                'etat':pa.etat,
+                'serie':pa.serie,
+                'id_epreuve': pa.id_epreuve
+            }
+            participants.append(pa)
+        return {'participants': map(lambda t: marshal(t, participant_fields), participants)}
+
+    def post(self,id_epreuve):
+        args = self.reqparse.parse_args()
+        print args['id_epreuve']
+        print args['hc']
+        pa = Participant(num_depart=args['num_depart'],nom_monture=args['nom_monture'],nom_cavalier=args['nom_cavalier']\
+            ,points_init=args['points_init'],temps_init=args['temps_init'],points_barr=args['points_barr'],temps_barr=args['temps_barr']\
+            ,points_barr2=args['points_barr2'],temps_barr2=args['temps_barr2'],hc=args['hc'],etat=args['etat'],serie=args['serie']\
+            ,id_epreuve=id_epreuve)
+        db.session.add(pa)
+        db.session.commit()
+        part = {
+                'id':pa.id_participant,
+                'num_depart': pa.num_depart,
+                'nom_monture': pa.nom_monture,
+                'nom_cavalier': pa.nom_cavalier,
+                'points_init': pa.points_init,
+                'temps_init':pa.temps_init,
+                'points_barr': pa.points_barr,
+                'temps_barr':pa.temps_barr,
+                'points_barr2': pa.points_barr2,
+                'temps_barr2':pa.temps_barr2,
+                'hc':pa.hc,
+                'etat':pa.etat,
+                'serie':pa.serie,
+                'id_epreuve': pa.id_epreuve
+            }
+        print part
+        return {'participant':marshal(part, participant_fields)}
+
+    def options(self):
+        return {'Allow' : 'GET,POST' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,POST' }
+
+class ParticipantSingle(Resource):
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('num_depart', type = int, location = 'json')
+        self.reqparse.add_argument('nom_monture', type = str, location = 'json')
+        self.reqparse.add_argument('nom_cavalier', type = str, location = 'json')
+        self.reqparse.add_argument('points_init', type = int, location = 'json')
+        self.reqparse.add_argument('temps_init', type = int, location = 'json')
+        self.reqparse.add_argument('points_barr', type = int, location = 'json')
+        self.reqparse.add_argument('temps_barr', type = int, location = 'json')
+        self.reqparse.add_argument('points_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('temps_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('hc', type =bool, location = 'json')
+        self.reqparse.add_argument('etat', type =str, location = 'json')
+        self.reqparse.add_argument('serie', type =int, location = 'json')
+        self.reqparse.add_argument('id_epreuve', type =int, location = 'json')
+        super(ParticipantSingle, self).__init__()
+
+    def get(self,id):
+        pa = db.session.query(Participant).filter_by(id_participant=id).first()
+        print pa
+        part = {
+            'id':pa.id_participant,
+            'num_depart': pa.num_depart,
+            'nom_monture': pa.nom_monture,
+            'nom_cavalier': pa.nom_cavalier,
+            'points_init': pa.points_init,
+            'temps_init':pa.temps_init,
+            'points_barr': pa.points_barr,
+            'temps_barr':pa.temps_barr,
+            'points_barr2': pa.points_barr2,
+            'temps_barr2':pa.temps_barr2,
+            'hc':pa.hc,
+            'etat':pa.etat,
+            'serie':pa.serie,
+            'id_epreuve': pa.id_epreuve
+            }
+        return {'participant': marshal(part, participant_fields)}
+
+    def put(self,id):
+        args = self.reqparse.parse_args()
+        part = {
+            'id':id,
+            'num_depart': args['num_depart'],
+            'nom_monture': args['nom_monture'],
+            'nom_cavalier': args['nom_cavalier'],
+            'points_init': args['points_init'],
+            'temps_init':args['temps_init'],
+            'points_barr': args['points_barr'],
+            'temps_barr':args['temps_barr'],
+            'points_barr2': args['points_barr2'],
+            'temps_barr2':args['temps_barr2'],
+            'hc':args['hc'],
+            'etat':args['etat'],
+            'serie':args['serie'],
+            'id_epreuve': args['id_epreuve']
+            }
+        print part
+        tt = db.session.query(Participant).filter_by(id_epreuve=id).update({"num_depart":args['num_depart'],"nom_monture":args['nom_monture'],"nom_cavalier":args['nom_cavalier']\
+            ,"points_init":args['points_init'],"temps_init":args['temps_init'],"points_barr":args['points_barr'],"temps_barr":args['temps_barr']\
+            ,"points_barr2":args['points_barr2'],"temps_barr2":args['temps_barr2'],"hc":args['hc'],"etat":args['etat'],"serie":args['serie']\
+            ,"id_epreuve":args['id_epreuve']})
+
+        if tt == 0:
+            abort(404)
+        db.session.commit()
+        return {'participant':marshal(part, participant_fields)}
+
+    def delete(self,id):
+        tt= db.session.query(Participant).filter_by(id_participant=id).delete()
+        if tt == 0:
+            abort(404)
+        db.session.commit()
+        return { 'result': True }
+
+    def options(self):
+        return {'Allow' : 'GET,PUT,DELETE' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'GET,PUT,DELETE' }
+
+from bareme import Baremes
+
+class BaremesList(Resource):
+    def get(self):
+        print Baremes.getBaremes()
+        return {'baremes': Baremes.getBaremes()}
+class Bareme(Resource):
+    def get(self,code):
+        Baremes.doBaremes(code)
+        return {'youyou':True}
+
 api.add_resource(Config, '/course/api/v1.0/config', endpoint='config')
 api.add_resource(Compet,'/course/api/v1.0/new_compet',endpoint='compet')
 api.add_resource(EpreuveList,'/course/api/v1.0/epreuves',endpoint='epreuves')
 api.add_resource(EpreuveSingle,'/course/api/v1.0/epreuves/<int:id>',endpoint='epreuve')
+api.add_resource(ParticipantList,'/course/api/v1.0/participants/<int:id_epreuve>',endpoint='participants')
+api.add_resource(ParticipantSingle,'/course/api/v1.0/participant/<int:id>',endpoint='participant')
+api.add_resource(BaremesList,'/course/api/v1.0/baremes',endpoint='baremes')
+api.add_resource(Bareme,'/course/api/v1.0/bareme/<int:code>',endpoint='bareme')
