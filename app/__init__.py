@@ -20,4 +20,5 @@ if not os.path.exists(app.config['DATABASE_LOCATION']):
     print 'yes'
 
 import models
+#import rs232Thread
 
