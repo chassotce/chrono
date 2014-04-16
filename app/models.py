@@ -365,11 +365,17 @@ from bareme import Baremes
 
 class BaremesList(Resource):
     def get(self):
-        print Baremes.getBaremes()
         return {'baremes': Baremes.getBaremes()}
+
 class Bareme(Resource):
-    def get(self,code):
-        a = Baremes.doBaremes(code)
+    def __init__(self):
+        self.reqparse = reqparse.RequestParser()
+        self.reqparse.add_argument('code',type=str,location='json')
+        super(Bareme, self).__init__()
+
+    def post(self):
+        args = self.reqparse.parse_args()
+        a = Baremes.doBaremes(args['code'])
         return {'name':a}
 
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
@@ -379,4 +385,4 @@ api.add_resource(EpreuveSingle,app.config['REST_PATH']+'epreuves/<int:id>',endpo
 api.add_resource(ParticipantList,app.config['REST_PATH']+'participants/<int:id_epreuve>',endpoint='participants')
 api.add_resource(ParticipantSingle,app.config['REST_PATH']+'participant/<int:id>',endpoint='participant')
 api.add_resource(BaremesList,app.config['REST_PATH']+'baremes',endpoint='baremes')
-api.add_resource(Bareme,app.config['REST_PATH']+'bareme/<int:code>',endpoint='bareme')
+api.add_resource(Bareme,app.config['REST_PATH']+'bareme',endpoint='bareme')
