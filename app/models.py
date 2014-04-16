@@ -4,14 +4,14 @@ from flask_restful import Resource, marshal, abort,reqparse,fields
 import json
 from json import load
 from flask import jsonify
-import sqlitebck,sqlite3,datetime
+import sqlite3,datetime
 
 
 class Epreuve(db.Model):
     __tablename_ = 'epreuve'
     id_epreuve = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(32),unique=True)
-    bareme_code = db.Column(db.Integer)
+    bareme_code = db.Column(db.String(32))
     temps_accorde = db.Column(db.Integer)
     nb_serie = db.Column(db.Integer)
 
@@ -82,14 +82,6 @@ class Config(Resource):
 
 class Compet(Resource):
     def get(self):
-        #print app.config['DATABASE_NAME']
-        #conn = sqlite3.connect(app.config['DATABASE_LOCATION'])
-        #backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-        #conn2 = sqlite3.connect(backupname)
-        #sqlitebck.copy(conn, conn2)
-        #conn.close()
-        #conn2.close()
-        #db.create_all()
         con = sqlite3.connect(app.config['DATABASE_LOCATION'])
         backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")+'.sql'
         with open(backupname, 'w') as f:
@@ -104,7 +96,7 @@ class Compet(Resource):
 
 epreuve_fields = {
     'nom': fields.String,
-    'bareme_code': fields.Integer,
+    'bareme_code': fields.String,
     'temps_accorde': fields.Integer,
     'nb_serie': fields.Integer,
     'uri': fields.Url('epreuve')
@@ -116,7 +108,7 @@ class EpreuveList(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('nom', type = str, location = 'json')
-        self.reqparse.add_argument('bareme_code', type = int, location = 'json')
+        self.reqparse.add_argument('bareme_code', type = str, location = 'json')
         self.reqparse.add_argument('temps_accorde', type = int, location = 'json')
         self.reqparse.add_argument('nb_serie', type = int, location = 'json')
         super(EpreuveList, self).__init__()
