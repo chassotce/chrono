@@ -22,5 +22,9 @@ if not os.path.exists(app.config['DATABASE_LOCATION']):
     print 'check'
     db.create_all()
     print 'yes'
-#import rs232Thread
+
+import Rs232capture
+captureThread = Rs232capture()
+captureThread.start()
+
 
