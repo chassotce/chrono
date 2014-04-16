@@ -5,20 +5,20 @@ from models import Participant
 from sqlalchemy.sql import exists
 
 
-class RS232capture(threading.Thread):
+class RS232captureThread(threading.Thread):
     # configure the serial connection
     global ser
+    '''
     ser = serial.Serial(
-        port='/dev/ttyUSB0',
+        port="/dev/ttyUSB0",
         baudrate=1200,
         parity=serial.PARITY_EVEN,
         stopbits=serial.STOPBITS_ONE,
         bytesize=serial.EIGHTBITS
-    )
+    )'''
 
     oldPacket = ""
 
-    global penaltyTime
     penaltyTime = 0
     global hundredNumberRunner
     hundredNumberRunner = 0
@@ -28,14 +28,18 @@ class RS232capture(threading.Thread):
     SYNCHRO = "ff"
     BLANK = "aa"
 
-    ser.open()
+    #ser.open()
     #ser.setRTS(True) TO USE LATER
 
-    ser.setDTR(True)  #confirms the connection
+    #ser.setDTR(True)  #confirms the connection
     print "DTR is set on 1 now"
 
-    testPacketParcours = "aa28000404000000aa1aa0aaaa0000ff".decode("hex")
-    testPacketClassement= "2553000404000000aa1aa0aaaa0000ff".decode("hex")
+    global testPacketParcours
+    testPacketParcours = "aa28000404000000aa1aa2aaaa0000ff"
+    testPacketClassement = "2553000404000000aa1aa1aaaa0000ff".decode("hex")
+
+    def __init__(self):
+        threading.Thread.__init__(self)
 
     def checkPCCommand(pcCommand, currNumber):
         options = {2: "eliminated",
@@ -60,53 +64,60 @@ class RS232capture(threading.Thread):
                 {"hc": True})
 
         def incrTime():
-            penaltyTime += 25  #1/4 second or something else?
+            self.penaltyTime += 100  #Bareme C, bareme A adds points
 
         def IncrNumByHundred():
-            hundredNumberRunner+=1
+            hundredNumberRunner += 1
 
         def isBarrage():  #useless if the sqlalchemy requests are correct
             nothing = 0
 
-    def saveRunner(currentPacket):
-        currentPen = int(currentPacket[7:8])
-        currentTime = int(currentPacket[1:4]) + penaltyTime  #TODO : deal with the fifth number (also seconds)
-        currentNumber = int(currentPacket[22] + currentPacket[19]) + 100 * hundredNumberRunner
+    def saveRunner(self, currentPacket):
 
-        print "Current Number : %s, current time : %s, current penalties : %s", \
-            currentNumber, currentTime, currentPen
+        currentPacket = currentPacket.replace("a", "0")
+        print currentPacket
 
-        #TODO: Check the following syntax, it seems a little devious
-        if db.session.query(exists().where(Participant.num_depart == currentNumber
-        and Participant.id_epreuve == app.config['CURRENT_EPREUVE_ID']).scalar()):
+        currentPen = int(currentPacket[6:8])
+        currentTime = int(currentPacket[0:4]) + self.penaltyTime  #TODO : deal with the fifth number (also seconds)
+        currentNumber = int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner
 
-            if db.session.query(Participant).filter_by(num_depart=currentNumber,
-                                                       id_epreuve=app.config['CURRENT_EPREUVE_ID']).temps_init == 0:
+        print "Current Number : {0} , current time : {1} , current penalties : {2}".format(str(currentNumber),
+                                                                                           str(currentTime),
+                                                                                           str(currentPen))
 
-                db.session.query(Participant).filter_by(num_depart=currentNumber,
-                                                        id_epreuve=app.config['CURRENT_EPREUVE_ID']).update(
+        app.config["CURRENT_EPREUVE_ID"]=5
+        currentRunner=db.session.query(Participant).filter(Participant.num_depart == currentNumber
+                    and Participant.id_epreuve == app.config["CURRENT_EPREUVE_ID"])
+
+        print db.session.query(currentRunner.exists()).all()
+        if "True" in str(db.session.query(currentRunner.exists()).all()):
+            print "Runner already in db"
+
+            if currentRunner.temps_init == 0: #No temps_init for an object Query
+                print "Runner now has time_init"
+                currentRunner.update(
                     {"points_init": currentPen}, {"temps_init": currentTime})
 
-            elif db.session.query(Participant).filter_by(num_depart=currentNumber,
-                                                         id_epreuve=app.config['CURRENT_EPREUVE_ID']).temps_barr == 0:
-
-                db.session.query(Participant).filter_by(num_depart=currentNumber,
-                                                        id_epreuve=app.config['CURRENT_EPREUVE_ID']).update(
+            elif currentRunner.temps_barr == 0:
+                print "Runner now has time_barr"
+                currentRunner.update(
                     {"points_barr": currentPen}, {"temps_barr": currentTime})
 
             else:
-                db.session.query(Participant).filter_by(num_depart=currentNumber,
-                                                        id_epreuve=app.config['CURRENT_EPREUVE_ID']).update(
+                print "Runner now has time_barr2"
+                currentRunner.update(
                     {"points_barr2": currentPen}, {"temps_barr2": currentTime})
+
         else:
-            currentRunner = Participant(
+            print "Runner not in db, creating him"
+            runnerToAdd = Participant(
                 num_depart=currentNumber, points_init=currentPen, temps_init=currentTime,
-                id_epreuve=app.config['CURRENT_EPREUVE_ID'])
-            db.session.add(currentRunner)
+                id_epreuve=app.config["CURRENT_EPREUVE_ID"])
+            db.session.add(runnerToAdd)
         db.session.commit()
         penaltyTime = 0
 
-    def capture(self, oldPacket=None):
+    def capture(self):
         currentPacket = ""
         currentChar = ""
         while currentChar != SYNCHRO:
@@ -115,34 +126,36 @@ class RS232capture(threading.Thread):
         print currentPacket
         if currentPacket[6] != 0:
             self.checkPCCommand(currentPacket[6], int(currentPacket[22] + currentPacket[19]))
-        if oldPacket != currentPacket:
+        if self.oldPacket != currentPacket:
             oldPacket = currentPacket
             if currentPacket[0:1] != BLANK:
                 self.saveRunner(currentPacket)
 
     def run(self):
-        while True:
-            self.capture()
-            #ser.flush()
-            #ser.close()
-            #exit()
+        self.saveRunner(testPacketParcours)
+        print "testPacketParcours was handled"
+        # while True:
+        # self.capture()
+        #ser.flush()
+        #ser.close()
+        #exit()
 
 
-class RS232Send(threading.Thread):
+class RS232SendThread(threading.Thread):
     def getRankFrame(rank):
         if rank < 10:
-            frame = 'bccb0d0' + str(rank) + '0000000000000000000000ff'
+            frame = "bccb0d0" + str(rank) + "0000000000000000000000ff"
             return frame.decode("hex")
         else:
-            frame = 'bccb0d' + str(rank) + '0000000000000000000000ff'
+            frame = "bccb0d" + str(rank) + "0000000000000000000000ff"
             return frame.decode("hex")
 
     def getPointFrame(point):
-        frame = '000000' 'd0' + '0000000000000000000000ff'  #PO at the start
+        frame = "000000" "d0" + "0000000000000000000000ff"  #PO at the start
         return frame.decode("hex")
 
     def getOverlappingFrame(overlap):
-        frame = '000000' 'bd' + '0000000000000000000000ff'  #dE at the start
+        frame = "000000" "bd" + "0000000000000000000000ff"  #dE at the start
         return frame.decode("hex")
 
     def run(self):
