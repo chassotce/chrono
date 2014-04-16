@@ -1,3 +1,6 @@
 __author__ = 'chassotce'
-def run():
+def classement():
     print("Hello from a asctv!")
+
+def getDesc():
+    return 'Bareme A avec chrono'
