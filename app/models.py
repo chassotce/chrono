@@ -82,13 +82,20 @@ class Config(Resource):
 
 class Compet(Resource):
     def get(self):
-        print app.config['DATABASE_NAME']
-        conn = sqlite3.connect(app.config['DATABASE_LOCATION'])
-        backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-        conn2 = sqlite3.connect(backupname)
-        sqlitebck.copy(conn, conn2)
-        conn.close()
-        conn2.close()
+        #print app.config['DATABASE_NAME']
+        #conn = sqlite3.connect(app.config['DATABASE_LOCATION'])
+        #backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+        #conn2 = sqlite3.connect(backupname)
+        #sqlitebck.copy(conn, conn2)
+        #conn.close()
+        #conn2.close()
+        #db.create_all()
+        con = sqlite3.connect(app.config['DATABASE_LOCATION'])
+        backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")+'.sql'
+        with open(backupname, 'w') as f:
+            for line in con.iterdump():
+                f.write('%s\n' % line)
+        con.close()
         db.create_all()
         return {'success':'true'}
 
@@ -370,14 +377,14 @@ class BaremesList(Resource):
         return {'baremes': Baremes.getBaremes()}
 class Bareme(Resource):
     def get(self,code):
-        Baremes.doBaremes(code)
-        return {'youyou':True}
+        a = Baremes.doBaremes(code)
+        return {'name':a}
 
-api.add_resource(Config, '/course/api/v1.0/config', endpoint='config')
-api.add_resource(Compet,'/course/api/v1.0/new_compet',endpoint='compet')
-api.add_resource(EpreuveList,'/course/api/v1.0/epreuves',endpoint='epreuves')
-api.add_resource(EpreuveSingle,'/course/api/v1.0/epreuves/<int:id>',endpoint='epreuve')
-api.add_resource(ParticipantList,'/course/api/v1.0/participants/<int:id_epreuve>',endpoint='participants')
-api.add_resource(ParticipantSingle,'/course/api/v1.0/participant/<int:id>',endpoint='participant')
-api.add_resource(BaremesList,'/course/api/v1.0/baremes',endpoint='baremes')
-api.add_resource(Bareme,'/course/api/v1.0/bareme/<int:code>',endpoint='bareme')
+api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
+api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')
+api.add_resource(EpreuveList,app.config['REST_PATH']+'epreuves',endpoint='epreuves')
+api.add_resource(EpreuveSingle,app.config['REST_PATH']+'epreuves/<int:id>',endpoint='epreuve')
+api.add_resource(ParticipantList,app.config['REST_PATH']+'participants/<int:id_epreuve>',endpoint='participants')
+api.add_resource(ParticipantSingle,app.config['REST_PATH']+'participant/<int:id>',endpoint='participant')
+api.add_resource(BaremesList,app.config['REST_PATH']+'baremes',endpoint='baremes')
+api.add_resource(Bareme,app.config['REST_PATH']+'bareme/<int:code>',endpoint='bareme')

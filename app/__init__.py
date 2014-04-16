@@ -13,12 +13,14 @@ db = SQLAlchemy(app)
 
 
 
+
+
+import models
+
 print('__init__')
 if not os.path.exists(app.config['DATABASE_LOCATION']):
     print 'check'
     db.create_all()
     print 'yes'
-
-import models
 #import rs232Thread
 

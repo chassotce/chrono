@@ -27,24 +27,24 @@ baremes=[
         ]
 
 def AAvecChrono():
-    print "A avec chrono.\n"
-    return 1
+    res =  "A avec chrono.\n"
+    return res
 
 def ASansChrono():
-    print "A sans chrono\n"
-    return 1
+    res =  "A sans chrono\n"
+    return res
 
 def ASansChronoAvecBarr():
-    print "A sans chrono avec barrage\n"
-    return 1
+    res =  "A sans chrono avec barrage\n"
+    return res
 
 def ASansChronoTourV():
-    print "A sans chrono tour du vainqueur\n"
-    return 1
+    res =  "A sans chrono tour du vainqueur\n"
+    return res
 
 def C():
-    print "C\n"
-    return 1
+    res = "C\n"
+    return res
 
 options = {
     0 : AAvecChrono,
@@ -65,3 +65,4 @@ class Baremes:
         print a
         print db.session.query(Epreuve).all()
         print db.session.query(Participant).all()
+        return a
