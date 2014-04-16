@@ -43,30 +43,6 @@ class RS232capture:
         frame = '000000' 'bd' + '0000000000000000000000ff'  #dE at the start
         return frame.decode("hex")
 
-
-    def eliminated():
-        db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-    def gaveUp():
-        db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-    def HC():
-        db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-    def incrTime():
-        penaltyTime+=1
-
-    def IncrNumByHundred():
-        nothing=0
-        #TODO
-
-    def isBarrage():
-        nothing=0
-        #TODO
-
     def checkPCCommand(pcCommand, currNumber):
         options = {2: eliminated,
                 3: gaveUp,
@@ -76,6 +52,29 @@ class RS232capture:
                 12: isBarrage,
         }
         options[pcCommand]()
+
+        def eliminated():
+            db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                {}) #Declare the right thing
+
+        def gaveUp():
+            db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                {}) #Declare the right thing
+
+        def HC():
+            db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                    {}) #Declare the right thing
+
+        def incrTime():
+            penaltyTime+=1
+
+        def IncrNumByHundred():
+            nothing=0
+            #TODO
+
+        def isBarrage():
+            nothing=0
+            #TODO
 
     def saveRunner(currentPacket):
         currentPen = int(currentPacket[7:8])
