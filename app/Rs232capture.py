@@ -43,19 +43,29 @@ class RS232capture:
         frame = '000000' 'bd' + '0000000000000000000000ff'  #dE at the start
         return frame.decode("hex")
 
-    def capture(self, oldPacket=None):
-        currentPacket = ""
-        currentChar = ""
-        while currentChar != "ff":
-            currentPacket += currentChar
-            currentChar = ser.read(1).encode("hex")
-        print currentPacket
-        if currentPacket[6] != 0:
-            self.checkPCCommand(currentPacket[6], int(currentPacket[22] + currentPacket[19]))
-        if oldPacket != currentPacket:
-            oldPacket = currentPacket
-            if "aa" != currentPacket[0:1]:
-                self.saveRunner(currentPacket)
+
+    def eliminated():
+        db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                {}) #Declare the right thing
+
+    def gaveUp():
+        db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                {}) #Declare the right thing
+
+    def HC():
+        db.session.query(Participant).filter_by(num_depart=currNumber).update(
+                {}) #Declare the right thing
+
+    def incrTime():
+        penaltyTime+=1
+
+    def IncrNumByHundred():
+        nothing=0
+        #TODO
+
+    def isBarrage():
+        nothing=0
+        #TODO
 
     def checkPCCommand(pcCommand, currNumber):
         options = {2: eliminated,
@@ -66,31 +76,6 @@ class RS232capture:
                 12: isBarrage,
         }
         options[pcCommand]()
-
-        def eliminated():
-            db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-        def gaveUp():
-            db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-        def HC():
-            db.session.query(Participant).filter_by(num_depart=currNumber).update(
-                {}) #Declare the right thing
-
-        def incrTime():
-            penaltyTime+=1
-
-        def IncrNumByHundred():
-            nothing=0
-            #TODO
-
-        def isBarrage():
-            nothing=0
-            #TODO
-
-        
 
     def saveRunner(currentPacket):
         currentPen = int(currentPacket[7:8])
@@ -112,6 +97,20 @@ class RS232capture:
             db.session.add(currentRunner)
         db.session.commit()
         penaltyTime=0
+
+    def capture(self, oldPacket=None):
+        currentPacket = ""
+        currentChar = ""
+        while currentChar != "ff":
+            currentPacket += currentChar
+            currentChar = ser.read(1).encode("hex")
+        print currentPacket
+        if currentPacket[6] != 0:
+            self.checkPCCommand(currentPacket[6], int(currentPacket[22] + currentPacket[19]))
+        if oldPacket != currentPacket:
+            oldPacket = currentPacket
+            if "aa" != currentPacket[0:1]:
+                self.saveRunner(currentPacket)
 
     def main(self):
         while 1:
