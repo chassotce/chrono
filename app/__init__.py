@@ -3,6 +3,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_httpauth import HTTPBasicAuth
 from flask_sqlalchemy import SQLAlchemy
+from json import load
 import os
 
 app = Flask(__name__)
@@ -11,7 +12,11 @@ api = Api(app)
 auth = HTTPBasicAuth()
 db = SQLAlchemy(app)
 
-
+with open(app.config['CONFIG_FILE']) as file:
+    result = load(file)
+    app.config['TMP_CHARGE_CHRONO'] = result['tmp_charge_chrono']
+file.close()
+print app.config['TMP_CHARGE_CHRONO']
 
 
 
@@ -23,8 +28,8 @@ if not os.path.exists(app.config['DATABASE_LOCATION']):
     db.create_all()
     print 'yes'
 
-import Rs232capture
-captureThread = Rs232capture()
-captureThread.start()
+#import Rs232capture
+#captureThread = Rs232capture()
+#captureThread.start()
 
 

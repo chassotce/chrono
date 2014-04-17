@@ -7,3 +7,5 @@ CONFIG_FILE = 'app/config.json'
 BACKUP_DIR = 'app'
 REST_PATH = '/course/api/v1.0/'
 CURRENT_EPREUVE_ID = 0
+NUMBER_OF_CL = 30/100
+TMP_CHARGE_CHRONO = 10

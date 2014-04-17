@@ -68,7 +68,7 @@ class Config(Resource):
         args = self.reqparse.parse_args()
         with open(app.config['CONFIG_FILE'], "r+") as configfile:
             data = load(configfile)
-            data['tmp_charge_chrono'] = args['tmp_charge_chrono']
+            app.config['TMP_CHARGE_CHRONO'] = data['tmp_charge_chrono'] = args['tmp_charge_chrono']
             data['tmp_aff_temps'] = args['tmp_aff_temps']
             data['tmp_aff_class'] = args['tmp_aff_class']
             configfile.seek(0)
@@ -193,6 +193,25 @@ class EpreuveSingle(Resource):
         return {'Allow' : 'GET,PUT' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET' }
 
 participant_fields = {
+    'num_depart': fields.Integer,
+    'nom_monture': fields.String,
+    'nom_cavalier': fields.String,
+    'points_init': fields.Integer,
+    'temps_init':fields.Integer,
+    'points_barr': fields.Integer,
+    'temps_barr':fields.Integer,
+    'points_barr2': fields.Integer,
+    'temps_barr2':fields.Integer,
+    'hc':fields.Boolean,
+    'etat':fields.String,
+    'serie':fields.Integer,
+    'id_epreuve': fields.Integer,
+    'uri': fields.Url('participant')
+}
+
+participant_fields_rang = {
+    'rang':fields.Integer,
+    'cl':fields.Boolean,
     'num_depart': fields.Integer,
     'nom_monture': fields.String,
     'nom_cavalier': fields.String,
@@ -376,7 +395,7 @@ class Bareme(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         a = Baremes.doBaremes(args['code'])
-        return {'name':a}
+        return a
 
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
 api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')
