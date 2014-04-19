@@ -13,7 +13,7 @@ class Epreuve(db.Model):
     nom = db.Column(db.String(32),unique=True)
     bareme_code = db.Column(db.String(32))
     temps_accorde = db.Column(db.Integer)
-    nb_serie = db.Column(db.Integer)
+    nb_serie = db.Column(db.Integer,default=1)
 
 class Participant(db.Model):
     __tablename__ = 'participant'
@@ -29,7 +29,7 @@ class Participant(db.Model):
     temps_barr2 = db.Column(db.Integer)
     hc = db.Column(db.Boolean())
     etat = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat')
-    serie = db.Column(db.Integer)
+    serie = db.Column(db.Integer,default=1)
     id_epreuve = db.Column(db.Integer, db.ForeignKey(Epreuve.id_epreuve), nullable=False)
 
 def add_bdd():
@@ -129,6 +129,8 @@ class EpreuveList(Resource):
 
     def post(self):
         args = self.reqparse.parse_args()
+        if args['nb_serie']< 1:
+            args['nb_serie'] = 1
         epreuve = Epreuve(nom=args['nom'],bareme_code=args['bareme_code'],temps_accorde=args['temps_accorde'],nb_serie=args['nb_serie'])
         db.session.add(epreuve)
         db.session.commit()
@@ -169,6 +171,8 @@ class EpreuveSingle(Resource):
 
     def put(self,id):
         args = self.reqparse.parse_args()
+        if args['nb_serie']< 1:
+            args['nb_serie'] = 1
         epr = {
             'id':id,
             'nom':args['nom'],
@@ -274,6 +278,8 @@ class ParticipantList(Resource):
         args = self.reqparse.parse_args()
         print args['id_epreuve']
         print args['hc']
+        if args['serie'] < 1:
+            args['serie'] = 1;
         pa = Participant(num_depart=args['num_depart'],nom_monture=args['nom_monture'],nom_cavalier=args['nom_cavalier']\
             ,points_init=args['points_init'],temps_init=args['temps_init'],points_barr=args['points_barr'],temps_barr=args['temps_barr']\
             ,points_barr2=args['points_barr2'],temps_barr2=args['temps_barr2'],hc=args['hc'],etat=args['etat'],serie=args['serie']\
@@ -343,6 +349,8 @@ class ParticipantSingle(Resource):
 
     def put(self,id):
         args = self.reqparse.parse_args()
+        if args['serie'] < 1:
+            args['serie'] = 1;
         part = {
             'id':id,
             'num_depart': args['num_depart'],

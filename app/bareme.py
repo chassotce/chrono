@@ -1,4 +1,5 @@
 from app.models import participant_fields_rang,marshal
+from app import app
 
 __author__ = 'chassotce'
 import pluginloader
@@ -23,5 +24,5 @@ class Baremes:
         z = {}
         if a !=None:
             plugin = pluginloader.loadPlugin(a)
-            z = plugin.classement(1)
+            z = plugin.classement(app.config['CURRENT_EPREUVE_ID'])
         return {'participants': map(lambda t: marshal(t, participant_fields_rang), z)}
