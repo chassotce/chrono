@@ -28,7 +28,7 @@ class Participant(db.Model):
     points_barr2 = db.Column(db.Integer,index=True)
     temps_barr2 = db.Column(db.Integer)
     hc = db.Column(db.Boolean())
-    etat = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat')
+    etat = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat',default="undef")
     serie = db.Column(db.Integer,default=1)
     id_epreuve = db.Column(db.Integer, db.ForeignKey(Epreuve.id_epreuve), nullable=False)
 
