@@ -1,8 +1,9 @@
-from app import models,db
+# coding=utf-8
+from app.models import Participant
 
-def classement():
-    print models.Participant.query.all()
+def classement(epreuve):
+    print Participant.query.all()
     print("Hello from a aac!")
 
 def getDesc():
-    return 'Bareme A avec chrono'
+    return 'Barème A avec chrono'

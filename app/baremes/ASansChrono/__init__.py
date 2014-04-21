@@ -1,6 +1,7 @@
 __author__ = 'chassotce'
-def classement():
+# coding=utf-8
+def classement(epreuve):
     print("Hello from a asc!")
 
 def getDesc():
-    return 'Bareme A avec chrono'
+    return 'Barème A sans chrono'

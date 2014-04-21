@@ -1,6 +1,8 @@
+from app.models import participant_fields_rang,marshal
+from app import app
+
 __author__ = 'chassotce'
 import pluginloader
-
 
 baremes = []
 def getAllBaremes():
@@ -19,7 +21,8 @@ class Baremes:
     @staticmethod
     def doBaremes(code):
         a = next((element for element in pluginloader.getPlugins() if element['name'] == code),None)
+        z = {}
         if a !=None:
             plugin = pluginloader.loadPlugin(a)
-            plugin.classement()
-        return {'youyou':'youyou'}
+            z = plugin.classement(app.config['CURRENT_EPREUVE_ID'])
+        return {'participants': map(lambda t: marshal(t, participant_fields_rang), z)}
