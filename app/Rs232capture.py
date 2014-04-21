@@ -27,7 +27,6 @@ class RS232captureThread(threading.Thread):
     penaltyTime = 0
 
     #ser.open()
-    #ser.setRTS(True) TO USE LATER
 
     #ser.setDTR(True)  #confirms the connection
     print "DTR is set on 1 now"
@@ -45,76 +44,85 @@ class RS232captureThread(threading.Thread):
         else:
             return "bccb0d" + str(rank) + "0000000000000000000000ff"
 
-    def getPointPacket(self,point):
+    def getPointPacket(self,point): #Not currently used
         return "000000" "d0" + "0000000000000000000000ff"  #PO at the start
 
 
-    def getOverlappingPacket(self,overlap):
+    def getOverlappingPacket(self,overlap): #Not currently used
         return "000000" "bd" + "0000000000000000000000ff"  #dE at the start
 
-    def checkPCCommand(pcCommand, currNumber):
+    def checkPCCommand(self, pcCommand, currNumber):
 
         currRunner=db.session.query(Participant).filter(Participant.num_depart == currNumber
                     and Participant.id_epreuve == app.config["CURRENT_EPREUVE_ID"]).first()
 
-        options = {2: "eliminated",
-                   3: "gaveUp",
-                   4: "HC",
-                   9: "incrTime",
-                   11: "IncrNumByHundred",
-        }
-
-        options[pcCommand]()
-
         def eliminated():
             currRunner.etat="elimine"
-            db.commit()
+            db.session.commit()
 
         def gaveUp():
             currRunner.etat="abandon"
-            db.commit()
+            db.session.commit()
 
         def HC():
             currRunner.hc=True
-            db.commit()
+            db.session.commit()
 
         def incrTime():
-            penaltyTime += 100  #Bareme C, bareme A adds points
+            penaltyTime += 100  #TODO : Check the bareme here or \
+            # simply add the points and do it when the classement is established?
 
         def IncrNumByHundred():
             hundredNumberRunner += 1
 
-    def display(self, currNumber):
+        options = {2: eliminated,
+                   3: gaveUp,
+                   4: HC,
+                   9: incrTime,
+                   11: IncrNumByHundred,
+        }
+        options[pcCommand]()
+
+
+
+    def display(self, currNumber, timePacket):
+        #ser.setRTS(True)
         print "Now displaying with number : "+str(currNumber)
         app.config["CURRENT_EPREUVE_ID"]=1
+
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
             .first().bareme_code
+
         print currentCode
         res = bareme.Baremes.doBaremes(currentCode)
-        infos = next((item for item in res if item["num_depart"] == currNumber), None)
+        infos = next((item for item in res if item["num_depart"] == currNumber), None) #In case more infos are needed
 
         print infos["rang"]
         rankPacket=self.getRankPacket(infos["rang"])
         print "RankPacket : "+rankPacket
 
-        print "temps_init : "+str((infos["temps_init"]))
-
         time_display = app.config["TMP_AFF_TEMPS"] * 1000
         rank_display = app.config["TMP_AFF_CLASSEMENT"] * 1000
 
-        #TODO : GetTime dans le bon format, verifier la boucle suivante, tester avec le chrono tout ca
-
         display_time=int(round(time.time() * 1000))+time_display
-        while display_time > int(round(time.time() * 1000)): #Seems dubious at most
-            "In the loop, display_time : "+str(display_time)
-        return 0
+        while display_time > int(round(time.time() * 1000)): #TODO: Check if that doesn't overflow the PI
+            print "display_time for time: ",display_time,". Current : ",int(round(time.time() * 1000))
+            #ser.write(currPacket)
+        #ser.flushOutput()
+        display_time=int(round(time.time() * 1000))+rank_display
+        while display_time > int(round(time.time() * 1000)):
+            print "display_time for rank : ",display_time,". Current : ",int(round(time.time() * 1000))
+            #ser.write(rankPacket)
+        #ser.flushOutput()
+        #ser.setRTS(False)
+        return
 
     def saveRunner(self, currentPacket):
 
         currentPacket = currentPacket.replace("a", "0")
 
         currentPen = int(currentPacket[6:8])
-        currentTime = int(currentPacket[0:4]) + self.penaltyTime  #TODO : deal with the fifth number (also seconds)
+        currentTime = int(currentPacket[0:5]) + self.penaltyTime  #TODO : Check that the numbers are in the right order
         #if currentTime < int(app.config["TMP_CHARGE_CHRONO"])*1000:
           #  return
         currentNumber = int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner
@@ -171,12 +179,13 @@ class RS232captureThread(threading.Thread):
             if currentPacket[0:1] != BLANK:
                 self.saveRunner(currentPacket)
             else:
-                self.display(int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner)
+                self.display(int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner, currentPacket)
 
     def run(self):
-       # self.saveRunner(testPacketParcours)
-        self.display(21)
-        print "testPacketClassement was handled"
+        #self.saveRunner(testPacketParcours)
+        #self.display(21, "000000")
+        #self.checkPCCommand(4,21)
+        print "should be elimine"
         # while True:
         # self.capture()
         #ser.flush()
