@@ -141,7 +141,13 @@ class RS232captureThread(threading.Thread):
         #exit()
 
 
-class RS232SendThread(threading.Thread):
+
+    def display(self):
+        time_display = app.config["tmp_aff_temps"]
+        rank_display = app.config["tmp_aff_class"]
+        return 0
+
+
     def getRankFrame(rank):
         if rank < 10:
             frame = "bccb0d0" + str(rank) + "0000000000000000000000ff"
@@ -158,5 +164,3 @@ class RS232SendThread(threading.Thread):
         frame = "000000" "bd" + "0000000000000000000000ff"  #dE at the start
         return frame.decode("hex")
 
-    def run(self):
-        return 0
