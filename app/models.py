@@ -69,8 +69,8 @@ class Config(Resource):
         with open(app.config['CONFIG_FILE'], "r+") as configfile:
             data = load(configfile)
             app.config['TMP_CHARGE_CHRONO'] = data['tmp_charge_chrono'] = args['tmp_charge_chrono']
-            data['tmp_aff_temps'] = args['tmp_aff_temps']
-            data['tmp_aff_class'] = args['tmp_aff_class']
+            app.config['TMP_AFF_TEMPS'] = data['tmp_aff_temps'] = args['tmp_aff_temps']
+            app.config['TMP_AFF_CLASSEMENT'] = data['tmp_aff_class'] = args['tmp_aff_class']
             configfile.seek(0)
             json.dump(data, configfile, indent=4)
             configfile.truncate()

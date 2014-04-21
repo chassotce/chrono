@@ -15,6 +15,8 @@ db = SQLAlchemy(app)
 with open(app.config['CONFIG_FILE']) as file:
     result = load(file)
     app.config['TMP_CHARGE_CHRONO'] = result['tmp_charge_chrono']
+    app.config['TMP_AFF_TEMPS'] = result['tmp_aff_temps']
+    app.config['TMP_AFF_CLASSEMENT'] = result['tmp_aff_class']
 file.close()
 print app.config['TMP_CHARGE_CHRONO']
 
