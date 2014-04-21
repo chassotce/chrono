@@ -69,7 +69,7 @@ class RS232captureThread(threading.Thread):
             db.session.commit()
 
         def incrTime():
-            penaltyTime += 100  #TODO : Check the bareme here or
+            penaltyTime += 100  #TODO : Check the bareme here or \
             # simply add the points and do it when the classement is established?
 
         def IncrNumByHundred():
@@ -89,8 +89,10 @@ class RS232captureThread(threading.Thread):
         #ser.setRTS(True)
         print "Now displaying with number : "+str(currNumber)
         app.config["CURRENT_EPREUVE_ID"]=1
+
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
             .first().bareme_code
+
         print currentCode
         res = bareme.Baremes.doBaremes(currentCode)
         infos = next((item for item in res if item["num_depart"] == currNumber), None) #In case more infos are needed
@@ -102,19 +104,17 @@ class RS232captureThread(threading.Thread):
         time_display = app.config["TMP_AFF_TEMPS"] * 1000
         rank_display = app.config["TMP_AFF_CLASSEMENT"] * 1000
 
-        #TODO : GetTime dans le bon format, verifier la boucle suivante, tester avec le chrono tout ca
-
         display_time=int(round(time.time() * 1000))+time_display
-        while display_time > int(round(time.time() * 1000)): #Seems dubious at most
+        while display_time > int(round(time.time() * 1000)): #TODO: Check if that doesn't overflow the PI
             print "display_time for time: ",display_time,". Current : ",int(round(time.time() * 1000))
             #ser.write(currPacket)
-        ser.flushOutput()
+        #ser.flushOutput()
         display_time=int(round(time.time() * 1000))+rank_display
-        while display_time > int(round(time.time() * 1000)): #Seems dubious at most
+        while display_time > int(round(time.time() * 1000)):
             print "display_time for rank : ",display_time,". Current : ",int(round(time.time() * 1000))
             #ser.write(rankPacket)
-        ser.flushOutput()
-        ser.setRTS(False)
+        #ser.flushOutput()
+        #ser.setRTS(False)
         return
 
     def saveRunner(self, currentPacket):
@@ -122,7 +122,7 @@ class RS232captureThread(threading.Thread):
         currentPacket = currentPacket.replace("a", "0")
 
         currentPen = int(currentPacket[6:8])
-        currentTime = int(currentPacket[0:4]) + self.penaltyTime  #TODO : deal with the fifth number (also seconds)
+        currentTime = int(currentPacket[0:5]) + self.penaltyTime  #TODO : Check that the numbers are in the right order
         #if currentTime < int(app.config["TMP_CHARGE_CHRONO"])*1000:
           #  return
         currentNumber = int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner
@@ -183,7 +183,7 @@ class RS232captureThread(threading.Thread):
 
     def run(self):
         #self.saveRunner(testPacketParcours)
-        #self.display(21)
+        #self.display(21, "000000")
         #self.checkPCCommand(4,21)
         print "should be elimine"
         # while True:
