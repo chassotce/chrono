@@ -403,7 +403,7 @@ class Bareme(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         a = Baremes.doBaremes(args['code'])
-        return a
+        return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
 
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
 api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')

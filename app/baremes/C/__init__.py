@@ -18,11 +18,36 @@ def classement(epreuve):
         if app.config['MIN_VALUE_SERIE_AUTO'] <= tot <= app.config['MAX_VALUE_SERIE_AUTO']:
             delta = 2
         i = 1
+        min_t = 0
+        min_t2 = 0
+        num_s1 = 0
+        num_s2 = 0
         r=1
         for pa in p:
+            serie = pa.serie
             if delta ==2 :
                 if i%2 == 0:
-                    pa.serie = 2;
+                    serie = 2
+                    num_s2 +=1
+                    if pa.temps_init == min_t2:
+                        r -= 1
+                    else :
+                        min_t2 = pa.temps_init
+                        r = num_s2
+                else:
+                    num_s1 +=1
+                    if pa.temps_init == min_t:
+                        r -= 1
+                    else :
+                        min_t = pa.temps_init
+                        r = num_s1
+
+            else:
+                if pa.temps_init == min_t:
+                    r -=1
+                else:
+                    min_t = pa.temps_init
+                    r = i
             hc = (r <= ((tot/delta) *app.config['NUMBER_OF_CL']))
             pa = {
                 'rang': r,
@@ -39,7 +64,7 @@ def classement(epreuve):
                 'temps_barr2':pa.temps_barr2,
                 'hc':pa.hc,
                 'etat':pa.etat,
-                'serie':pa.serie,
+                'serie':serie,
                 'id_epreuve': pa.id_epreuve
             }
             res.append(pa)

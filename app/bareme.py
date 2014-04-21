@@ -25,4 +25,4 @@ class Baremes:
         if a !=None:
             plugin = pluginloader.loadPlugin(a)
             z = plugin.classement(app.config['CURRENT_EPREUVE_ID'])
-        return {'participants': map(lambda t: marshal(t, participant_fields_rang), z)}
+        return z
