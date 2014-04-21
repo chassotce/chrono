@@ -21,6 +21,7 @@ class Baremes:
     @staticmethod
     def doBaremes(code):
         a = next((element for element in pluginloader.getPlugins() if element['name'] == code),None)
+        print a
         z = {}
         if a !=None:
             plugin = pluginloader.loadPlugin(a)
