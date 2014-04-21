@@ -3,5 +3,4 @@ flask-restful==0.2.1
 flask-httpauth==2.2.1
 SQLAlchemy==0.9.4
 flask-sqlalchemy==1.0
-sqlitebck==1.2.1
 pyserial==2.7
