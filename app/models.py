@@ -23,12 +23,14 @@ class Participant(db.Model):
     nom_cavalier = db.Column(db.String(32))
     points_init = db.Column(db.Integer,index=True,default=0)
     temps_init = db.Column(db.Integer,default=0)
+    etat_init = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat_init',default="undef")
     points_barr = db.Column(db.Integer,index=True,default=0)
     temps_barr = db.Column(db.Integer,default=0)
+    etat_barr = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat_barr',default="undef")
     points_barr2 = db.Column(db.Integer,index=True,default=0)
     temps_barr2 = db.Column(db.Integer,default=0)
+    etat_barr2 = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat_barr2',default="undef")
     hc = db.Column(db.Boolean(),default=False)
-    etat = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat',default="undef")
     serie = db.Column(db.Integer,default=1)
     id_epreuve = db.Column(db.Integer, db.ForeignKey(Epreuve.id_epreuve), nullable=False)
 
@@ -200,14 +202,16 @@ participant_fields = {
     'num_depart': fields.Integer,
     'nom_monture': fields.String,
     'nom_cavalier': fields.String,
-    'points_init': fields.Integer,
+    'points_init': fields.Float,
     'temps_init':fields.Integer,
-    'points_barr': fields.Integer,
+    'etat_init':fields.String,
+    'points_barr': fields.Float,
     'temps_barr':fields.Integer,
-    'points_barr2': fields.Integer,
+    'etat_barr':fields.String,
+    'points_barr2': fields.Float,
     'temps_barr2':fields.Integer,
+    'etat_barr2':fields.String,
     'hc':fields.Boolean,
-    'etat':fields.String,
     'serie':fields.Integer,
     'id_epreuve': fields.Integer,
     'uri': fields.Url('participant')
@@ -219,14 +223,16 @@ participant_fields_rang = {
     'num_depart': fields.Integer,
     'nom_monture': fields.String,
     'nom_cavalier': fields.String,
-    'points_init': fields.Integer,
+    'points_init': fields.Float,
     'temps_init':fields.Integer,
-    'points_barr': fields.Integer,
+    'etat_init':fields.String,
+    'points_barr': fields.Float,
     'temps_barr':fields.Integer,
-    'points_barr2': fields.Integer,
+    'etat_barr':fields.String,
+    'points_barr2': fields.Float,
     'temps_barr2':fields.Integer,
+    'etat_barr2':fields.String,
     'hc':fields.Boolean,
-    'etat':fields.String,
     'serie':fields.Integer,
     'id_epreuve': fields.Integer,
     'uri': fields.Url('participant')
@@ -238,14 +244,16 @@ class ParticipantList(Resource):
         self.reqparse.add_argument('num_depart', type = int, location = 'json')
         self.reqparse.add_argument('nom_monture', type = str, location = 'json')
         self.reqparse.add_argument('nom_cavalier', type = str, location = 'json')
-        self.reqparse.add_argument('points_init', type = int, location = 'json')
+        self.reqparse.add_argument('points_init', type = float, location = 'json')
         self.reqparse.add_argument('temps_init', type = int, location = 'json')
-        self.reqparse.add_argument('points_barr', type = int, location = 'json')
+        self.reqparse.add_argument('etat_init', type =str, location = 'json')
+        self.reqparse.add_argument('points_barr', type = float, location = 'json')
         self.reqparse.add_argument('temps_barr', type = int, location = 'json')
-        self.reqparse.add_argument('points_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('etat_barr', type =str, location = 'json')
+        self.reqparse.add_argument('points_barr2', type = float, location = 'json')
         self.reqparse.add_argument('temps_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('etat_barr2', type =str, location = 'json')
         self.reqparse.add_argument('hc', type =bool, location = 'json')
-        self.reqparse.add_argument('etat', type =str, location = 'json')
         self.reqparse.add_argument('serie', type =int, location = 'json')
         self.reqparse.add_argument('id_epreuve', type =int, location = 'json')
         super(ParticipantList, self).__init__()
@@ -262,12 +270,14 @@ class ParticipantList(Resource):
                 'nom_cavalier': pa.nom_cavalier,
                 'points_init': pa.points_init,
                 'temps_init':pa.temps_init,
+                'etat_init':pa.etat_init,
                 'points_barr': pa.points_barr,
                 'temps_barr':pa.temps_barr,
+                'etat_barr':pa.etat_barr,
                 'points_barr2': pa.points_barr2,
                 'temps_barr2':pa.temps_barr2,
+                'etat_barr2':pa.etat_barr2,
                 'hc':pa.hc,
-                'etat':pa.etat,
                 'serie':pa.serie,
                 'id_epreuve': pa.id_epreuve
             }
@@ -281,8 +291,10 @@ class ParticipantList(Resource):
         if args['serie'] < 1:
             args['serie'] = 1;
         pa = Participant(num_depart=args['num_depart'],nom_monture=args['nom_monture'],nom_cavalier=args['nom_cavalier']\
-            ,points_init=args['points_init'],temps_init=args['temps_init'],points_barr=args['points_barr'],temps_barr=args['temps_barr']\
-            ,points_barr2=args['points_barr2'],temps_barr2=args['temps_barr2'],hc=args['hc'],etat=args['etat'],serie=args['serie']\
+            ,points_init=args['points_init'],temps_init=args['temps_init'],etat_init=args['etat_init'],\
+                         points_barr=args['points_barr'],temps_barr=args['temps_barr'],etat_barr=args['etat_barr']
+            ,points_barr2=args['points_barr2'],temps_barr2=args['temps_barr2'],etat_barr2=args['etat_barr2']\
+            ,hc=args['hc'],serie=args['serie']\
             ,id_epreuve=id_epreuve)
         db.session.add(pa)
         db.session.commit()
@@ -293,12 +305,14 @@ class ParticipantList(Resource):
                 'nom_cavalier': pa.nom_cavalier,
                 'points_init': pa.points_init,
                 'temps_init':pa.temps_init,
+                'etat_init':pa.etat_init,
                 'points_barr': pa.points_barr,
                 'temps_barr':pa.temps_barr,
+                'etat_barr':pa.etat_barr,
                 'points_barr2': pa.points_barr2,
                 'temps_barr2':pa.temps_barr2,
+                'etat_barr2':pa.etat_barr2,
                 'hc':pa.hc,
-                'etat':pa.etat,
                 'serie':pa.serie,
                 'id_epreuve': pa.id_epreuve
             }
@@ -314,14 +328,16 @@ class ParticipantSingle(Resource):
         self.reqparse.add_argument('num_depart', type = int, location = 'json')
         self.reqparse.add_argument('nom_monture', type = str, location = 'json')
         self.reqparse.add_argument('nom_cavalier', type = str, location = 'json')
-        self.reqparse.add_argument('points_init', type = int, location = 'json')
+        self.reqparse.add_argument('points_init', type = float, location = 'json')
         self.reqparse.add_argument('temps_init', type = int, location = 'json')
-        self.reqparse.add_argument('points_barr', type = int, location = 'json')
+        self.reqparse.add_argument('etat_init', type =str, location = 'json')
+        self.reqparse.add_argument('points_barr', type = float, location = 'json')
         self.reqparse.add_argument('temps_barr', type = int, location = 'json')
-        self.reqparse.add_argument('points_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('etat_barr', type =str, location = 'json')
+        self.reqparse.add_argument('points_barr2', type = float, location = 'json')
         self.reqparse.add_argument('temps_barr2', type = int, location = 'json')
+        self.reqparse.add_argument('etat_barr2', type =str, location = 'json')
         self.reqparse.add_argument('hc', type =bool, location = 'json')
-        self.reqparse.add_argument('etat', type =str, location = 'json')
         self.reqparse.add_argument('serie', type =int, location = 'json')
         self.reqparse.add_argument('id_epreuve', type =int, location = 'json')
         super(ParticipantSingle, self).__init__()
@@ -330,20 +346,22 @@ class ParticipantSingle(Resource):
         pa = db.session.query(Participant).filter_by(id_participant=id).first()
         print pa
         part = {
-            'id':pa.id_participant,
-            'num_depart': pa.num_depart,
-            'nom_monture': pa.nom_monture,
-            'nom_cavalier': pa.nom_cavalier,
-            'points_init': pa.points_init,
-            'temps_init':pa.temps_init,
-            'points_barr': pa.points_barr,
-            'temps_barr':pa.temps_barr,
-            'points_barr2': pa.points_barr2,
-            'temps_barr2':pa.temps_barr2,
-            'hc':pa.hc,
-            'etat':pa.etat,
-            'serie':pa.serie,
-            'id_epreuve': pa.id_epreuve
+                'id':pa.id_participant,
+                'num_depart': pa.num_depart,
+                'nom_monture': pa.nom_monture,
+                'nom_cavalier': pa.nom_cavalier,
+                'points_init': pa.points_init,
+                'temps_init':pa.temps_init,
+                'etat_init':pa.etat_init,
+                'points_barr': pa.points_barr,
+                'temps_barr':pa.temps_barr,
+                'etat_barr':pa.etat_barr,
+                'points_barr2': pa.points_barr2,
+                'temps_barr2':pa.temps_barr2,
+                'etat_barr2':pa.etat_barr2,
+                'hc':pa.hc,
+                'serie':pa.serie,
+                'id_epreuve': pa.id_epreuve
             }
         return {'participant': marshal(part, participant_fields)}
 
@@ -358,20 +376,24 @@ class ParticipantSingle(Resource):
             'nom_cavalier': args['nom_cavalier'],
             'points_init': args['points_init'],
             'temps_init':args['temps_init'],
+            'etat_init':args['etat_init'],
             'points_barr': args['points_barr'],
             'temps_barr':args['temps_barr'],
+            'etat_barr':args['etat_barr'],
             'points_barr2': args['points_barr2'],
             'temps_barr2':args['temps_barr2'],
+            'etat_barr2':args['etat_barr2'],
             'hc':args['hc'],
-            'etat':args['etat'],
             'serie':args['serie'],
             'id_epreuve': args['id_epreuve']
             }
         print part
-        tt = db.session.query(Participant).filter_by(id_epreuve=id).update({"num_depart":args['num_depart'],"nom_monture":args['nom_monture'],"nom_cavalier":args['nom_cavalier']\
-            ,"points_init":args['points_init'],"temps_init":args['temps_init'],"points_barr":args['points_barr'],"temps_barr":args['temps_barr']\
-            ,"points_barr2":args['points_barr2'],"temps_barr2":args['temps_barr2'],"hc":args['hc'],"etat":args['etat'],"serie":args['serie']\
-            ,"id_epreuve":args['id_epreuve']})
+        tt = db.session.query(Participant).filter_by(id_epreuve=id).update({"num_depart":args['num_depart'],\
+            "nom_monture":args['nom_monture'],"nom_cavalier":args['nom_cavalier']\
+            ,"points_init":args['points_init'],"temps_init":args['temps_init'],"etat_init":args['etat_init']\
+            ,"points_barr":args['points_barr'],"temps_barr":args['temps_barr'],"etat_barr":args['etat_barr']\
+            ,"points_barr2":args['points_barr2'],"temps_barr2":args['temps_barr2'],"etat_barr2":args['etat_barr2'],\
+            "hc":args['hc'],"serie":args['serie'],"id_epreuve":args['id_epreuve']})
 
         if tt == 0:
             abort(404)
