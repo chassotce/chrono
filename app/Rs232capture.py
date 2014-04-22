@@ -7,18 +7,20 @@ import time
 
 
 class RS232captureThread(threading.Thread):
+
     # configure the serial connection
     global ser
-    '''
     ser = serial.Serial(
         port="/dev/ttyUSB0",
         baudrate=1200,
         parity=serial.PARITY_EVEN,
         stopbits=serial.STOPBITS_ONE,
         bytesize=serial.EIGHTBITS
-    )'''
-
+    )
+    global oldPacket
     oldPacket = ""
+
+    isRunning=False
 
     global hundredNumberRunner, SYNCHRO, BLANK
     hundredNumberRunner = 0
@@ -26,17 +28,18 @@ class RS232captureThread(threading.Thread):
     BLANK = "aa"
     penaltyTime = 0
 
-    #ser.open()
+    ser.flush()
+    ser.close()
+    ser.open()
+    print "ser is now open"
 
-    #ser.setDTR(True)  #confirms the connection
+    ser.setDTR(True)  #confirms the connection
+    ser.setRTS(False)
     print "DTR is set on 1 now"
 
     global testPacketParcours, testPacketClassement
     testPacketParcours = "aa28000404000000aa1aa2aaaa0000ff"
     testPacketClassement = "2553000404000000aa1aa1aaaa0000ff"
-
-    def __init__(self):
-        threading.Thread.__init__(self)
 
     def getRankPacket(self,rank):
         if rank < 10:
@@ -55,6 +58,9 @@ class RS232captureThread(threading.Thread):
 
         currRunner=db.session.query(Participant).filter(Participant.num_depart == currNumber
                     and Participant.id_epreuve == app.config["CURRENT_EPREUVE_ID"]).first()
+
+        def reset():
+            return
 
         def eliminated():
             currRunner.etat="elimine"
@@ -75,19 +81,21 @@ class RS232captureThread(threading.Thread):
         def IncrNumByHundred():
             hundredNumberRunner += 1
 
-        options = {2: eliminated,
-                   3: gaveUp,
-                   4: HC,
-                   9: incrTime,
-                   11: IncrNumByHundred,
+        options = {'1': reset,
+                   '2': eliminated,
+                   '3': gaveUp,
+                   '4': HC,
+                   '9': incrTime,
+                   '11': IncrNumByHundred,
         }
         options[pcCommand]()
 
 
 
     def display(self, currNumber, timePacket):
-        #ser.setRTS(True)
-        print "Now displaying with number : "+str(currNumber)
+        ser.setRTS(True)
+        print "rts is on true"
+        print "Now displaying for runner number : "+str(currNumber)
         app.config["CURRENT_EPREUVE_ID"]=1
 
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
@@ -98,23 +106,25 @@ class RS232captureThread(threading.Thread):
         infos = next((item for item in res if item["num_depart"] == currNumber), None) #In case more infos are needed
 
         print infos["rang"]
-        rankPacket=self.getRankPacket(infos["rang"])
+        rankPacket=self.getRankPacket(infos["rang"]).decode("hex")
         print "RankPacket : "+rankPacket
 
         time_display = app.config["TMP_AFF_TEMPS"] * 1000
         rank_display = app.config["TMP_AFF_CLASSEMENT"] * 1000
 
+        print "Now displaying time"
+        timePacket=timePacket.decode("hex")
         display_time=int(round(time.time() * 1000))+time_display
         while display_time > int(round(time.time() * 1000)): #TODO: Check if that doesn't overflow the PI
-            print "display_time for time: ",display_time,". Current : ",int(round(time.time() * 1000))
-            #ser.write(currPacket)
-        #ser.flushOutput()
+            ser.write(timePacket)
+        ser.flushOutput()
+        print "Flushed, now displaying rank"
         display_time=int(round(time.time() * 1000))+rank_display
         while display_time > int(round(time.time() * 1000)):
-            print "display_time for rank : ",display_time,". Current : ",int(round(time.time() * 1000))
-            #ser.write(rankPacket)
-        #ser.flushOutput()
-        #ser.setRTS(False)
+            ser.write(rankPacket)
+        ser.flushOutput()
+        ser.setRTS(False)
+        print "displaying done, rts on false"
         return
 
     def saveRunner(self, currentPacket):
@@ -122,7 +132,9 @@ class RS232captureThread(threading.Thread):
         currentPacket = currentPacket.replace("a", "0")
 
         currentPen = int(currentPacket[6:8])
-        currentTime = int(currentPacket[0:5]) + self.penaltyTime  #TODO : Check that the numbers are in the right order
+        currentTime = int(currentPacket[5]+currentPacket[2:4]+currentPacket[0:2])
+        if self.penaltyTime!=0:
+            currentTime+=self.penaltyTime
         #if currentTime < int(app.config["TMP_CHARGE_CHRONO"])*1000:
           #  return
         currentNumber = int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner
@@ -138,13 +150,13 @@ class RS232captureThread(threading.Thread):
         if "True" in str(db.session.query(currentRunner.exists()).all()):
             print "Runner already in db"
 
-            if currentRunner.first().temps_init == None: #No temps_init for an object Query
+            if currentRunner.first().temps_init == None or currentRunner.first().temps_init == 0:
                 print "Runner has now a time_init"
                 currentRunner.first().points_init=currentPen
                 currentRunner.first().temps_init=currentTime
                 db.session.commit()
 
-            elif currentRunner.first().temps_barr == None:
+            elif currentRunner.first().temps_barr == None or currentRunner.first().temps_barr == 0:
                 print "Runner has now a time_barr"
                 currentRunner.first().points_barr=currentPen
                 currentRunner.first().temps_barr=currentTime
@@ -168,26 +180,31 @@ class RS232captureThread(threading.Thread):
     def capture(self):
         currentPacket = ""
         currentChar = ""
+        firstSynchro=ser.read(1).encode("hex")
+        while firstSynchro != SYNCHRO:
+            firstSynchro=ser.read(1).encode("hex")
         while currentChar != SYNCHRO:
             currentPacket += currentChar
             currentChar = ser.read(1).encode("hex")
         print currentPacket
-        if currentPacket[6] != 0:
-            self.checkPCCommand(currentPacket[6], int(currentPacket[22] + currentPacket[19]))
-        if self.oldPacket != currentPacket:
+        print self.isRunning
+        if currentPacket[4] != '0':
+            print "4 : ",currentPacket[4],", 22 : ", currentPacket[22],", 19 : ", currentPacket[19]
+            self.checkPCCommand(currentPacket[4], int(currentPacket[22] + currentPacket[19]))
+        if oldPacket != currentPacket:
+            global oldPacket
             oldPacket = currentPacket
-            if currentPacket[0:1] != BLANK:
-                self.saveRunner(currentPacket)
+            if currentPacket[0] == BLANK[0]:
+                self.isRunning=True
             else:
-                self.display(int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner, currentPacket)
+                if self.isRunning==True:
+                    self.saveRunner(currentPacket)
+                    self.display(int(currentPacket[21] + currentPacket[18]) + 100 * hundredNumberRunner, currentPacket)
+                    isRunning=False
 
     def run(self):
-        #self.saveRunner(testPacketParcours)
-        #self.display(21, "000000")
-        #self.checkPCCommand(4,21)
-        print "should be elimine"
-        # while True:
-        # self.capture()
+         while True:
+            self.capture()
         #ser.flush()
         #ser.close()
         #exit()
