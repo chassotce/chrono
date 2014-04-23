@@ -95,12 +95,11 @@ class RS232captureThread(threading.Thread):
             return
 
         def reset():
-            if self.oldPacket[0] != self.BLANK[0]:
-                if self.isRunning:
-                    print "Launching saveRunner..."
-                    self.saveRunner()
-                    if app.config["SEND_AFF"]:
-                        self.display()
+            if self.oldPacket[0] != self.BLANK[0] and self.isRunning:
+                print "Launching saveRunner..."
+                self.saveRunner()
+                if app.config["SEND_AFF"]:
+                    self.display()
 
         def eliminated():
             if currRunner.temps_init == 0:
@@ -133,6 +132,8 @@ class RS232captureThread(threading.Thread):
         def IncrNumByHundred():
             self.currentNumber += 100
             print "Increased Number is now : ", self.currentNumber
+            time.sleep(0.8)
+            self.ser.flushInput()
 
         def ldbarr():
             self.saveRunner()
@@ -159,6 +160,8 @@ class RS232captureThread(threading.Thread):
 
 
     def display(self):
+        if self.scorePacket is '000000000000000000000000000000':
+            return
         self.ser.setRTS(True)
         print "RTS set on true. Now displaying for runner number : ", self.currentNumber
 
@@ -195,18 +198,18 @@ class RS232captureThread(threading.Thread):
 
     def saveRunner(self):
 
-        print "Now using packet : ", self.scorePacket
         currentPacket = self.scorePacket.replace("a", "0")
         print "Now working with packet : ", currentPacket
 
         currentPen = int(currentPacket[6:8])
         currentTime = int(currentPacket[5] + currentPacket[2:4] + currentPacket[0:2])
-        #if currentTime < int(app.config["TMP_CHARGE_CHRONO"])*100:
-        #  return
-
+        if currentTime < int(app.config["TMP_CHARGE_CHRONO"]) * 100:
+            self.scorePacket= '000000000000000000000000000000'
+            return
         print "Current Number : {0} , current time : {1} , current penalties : {2}".format(str(self.currentNumber),
                                                                                            str(currentTime),
                                                                                            str(currentPen))
+        self.checkRunner()
         currentRunner = self.getRunner()
 
         if currentRunner.temps_init is None or currentRunner.temps_init is 0:
@@ -226,8 +229,10 @@ class RS232captureThread(threading.Thread):
             currentRunner.points_barr2 = currentPen
             currentRunner.temps_barr2 = currentTime
             db.session.commit()
+
         if not app.config["SEND_AFF"]:
             self.isRunning = False
+        return 0
 
     def capture(self):
         currentPacket = ""
