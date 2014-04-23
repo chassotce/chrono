@@ -116,7 +116,6 @@ class RS232captureThread(threading.Thread):
     def display(self, currNumber, timePacket):
         ser.setRTS(True)
         print "Now displaying for runner number : "+str(currNumber)
-        app.config["CURRENT_EPREUVE_ID"]=1
 
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
             .first().bareme_code
@@ -218,7 +217,6 @@ class RS232captureThread(threading.Thread):
             if currentPacket[0] == BLANK[0]:
                 self.isRunning=True
                 self.hasDisplayed=False
-                #ser.setRTS(False)
             else:
                 if self.isRunning==True:
                     self.saveRunner(currentPacket)
