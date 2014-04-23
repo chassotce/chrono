@@ -123,7 +123,6 @@ class RS232captureThread(threading.Thread):
         res = bareme.Baremes.doBaremes(currentCode)
         infos = next((item for item in res if item["num_depart"] == currNumber), None) #In case more infos are needed
         rankPacket=self.getRankPacket(infos["rang"])
-        print "rankPacket before decode : ", rankPacket
         rankPacket=rankPacket.decode("hex")
 
         time_display = app.config["TMP_AFF_TEMPS"] * 1000
@@ -131,20 +130,18 @@ class RS232captureThread(threading.Thread):
 
         print "Now displaying time"
         timePacket=(timePacket+"ff").decode("hex")
-        print timePacket
         display_time=int(round(time.time() * 1000))+time_display
 
         while display_time > int(round(time.time() * 1000)): #TODO: Check if that fits the planned time
             ser.write(timePacket)
-        print "Flushed, now displaying rank"
-        print "rankpacket : ",rankPacket
+
+        print "Now displaying Ranking"
 
         display_time=int(round(time.time() * 1000))+rank_display
         while display_time > int(round(time.time() * 1000)):
             ser.write(rankPacket)
-            #ser.flush()
         ser.setRTS(False)
-        print "displaying done"
+        print "Display finished"
         return
 
     def saveRunner(self, currentPacket):
@@ -207,7 +204,6 @@ class RS232captureThread(threading.Thread):
             currentPacket += currentChar
             currentChar = ser.read(1).encode("hex")
         print currentPacket
-        print self.isRunning
         if currentPacket[4] != '0':
             print "4 : ",currentPacket[4],", 22 : ", currentPacket[22],", 19 : ", currentPacket[19]
             self.checkPCCommand(currentPacket[4], int(currentPacket[22] + currentPacket[19]))
