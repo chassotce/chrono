@@ -13,10 +13,10 @@ def classement(epreuve):
     res = []
     while z<=n:
         p = db.session.query(Participant).filter_by(id_epreuve = epreuve,hc=False,serie=z)\
-            .filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO'])\
-            .order_by(desc(Participant.etat_init)).order_by(Participant.points_init)\
-            .order_by(desc(Participant.etat_barr)).order_by(Participant.points_barr)\
-            .order_by(desc(Participant.etat_barr2)).order_by(Participant.points_barr2).all()
+            .filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO']).all()
+            #.order_by(desc(Participant.etat_init)).order_by(Participant.points_init)\
+            #.order_by(desc(Participant.etat_barr)).order_by(Participant.points_barr)\
+            #.order_by(desc(Participant.etat_barr2)).order_by(Participant.points_barr2).all()
         tot = len(p)
         print tot
         delta = 1
@@ -173,7 +173,7 @@ def classement(epreuve):
                         etat1 = pa['etat_init']
                         r = i
 
-            cl = (r <= ((tot/delta) *app.config['NUMBER_OF_CL']))
+            cl = (r <= ceil(((tot/delta) *app.config['NUMBER_OF_CL'])))
             pa = {
                 'rang': r,
                 'cl' : cl,
@@ -196,7 +196,6 @@ def classement(epreuve):
             }
             res.append(pa)
             if (i % delta)==0 :
-                print i%delta
                 r +=1
             i +=1
         z+=1

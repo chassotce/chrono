@@ -48,7 +48,11 @@ def add_bdd():
 config_fields = {
     'tmp_charge_chrono': fields.Integer,
     'tmp_aff_temps': fields.Integer,
-    'tmp_aff_class': fields.Integer
+    'tmp_aff_class': fields.Integer,
+    'pen_tmps_depasse': fields.Float,
+    'pen_tmps_depasse_barr': fields.Float,
+    'pen_tmps_depasse_2_phase': fields.Float,
+    'send_aff': fields.Boolean
 }
 
 class Config(Resource):
@@ -58,12 +62,20 @@ class Config(Resource):
         self.reqparse.add_argument('tmp_charge_chrono', type = int, location = 'json')
         self.reqparse.add_argument('tmp_aff_temps', type = int, location = 'json')
         self.reqparse.add_argument('tmp_aff_class', type = int, location = 'json')
+        self.reqparse.add_argument('pen_tmps_depasse', type = float, location = 'json')
+        self.reqparse.add_argument('pen_tmps_depasse_barr', type = float, location = 'json')
+        self.reqparse.add_argument('pen_tmps_depasse_2_phase', type = float, location = 'json')
+        self.reqparse.add_argument('send_aff', type = bool, location = 'json')
         super(Config, self).__init__()
 
     def get(self):
         with open(app.config['CONFIG_FILE']) as file:
             result = load(file)
         file.close()
+        result['pen_tmps_depasse'] = app.config['A_TEMPS_DEPASSE']
+        result['pen_tmps_depasse_barr'] = app.config['A_TEMPS_DEPASSE_BARR']
+        result['pen_tmps_depasse_2_phase'] = app.config['A_TEMPS_DEPASSE_2PHASE']
+        result['send_aff'] = app.config['SEND_AFF']
         return {'config':marshal(result, config_fields)}
 
     def put(self):
@@ -77,6 +89,10 @@ class Config(Resource):
             json.dump(data, configfile, indent=4)
             configfile.truncate()
         configfile.close()
+        app.config['A_TEMPS_DEPASSE'] = args['pen_tmps_depasse']
+        app.config['A_TEMPS_DEPASSE_BARR'] = result['pen_tmps_depasse_barr']
+        app.config['A_TEMPS_DEPASSE_2PHASE'] = result['pen_tmps_depasse_2_phase']
+        app.config['SEND_AFF'] = result['send_aff']
         return {'config':marshal(data, config_fields)}
 
     def options(self):
@@ -422,10 +438,39 @@ class Bareme(Resource):
         self.reqparse.add_argument('code',type=str,location='json')
         super(Bareme, self).__init__()
 
+    def get(self):
+        print 'app.config["CURRENT_EPREUVE_ID"]',app.config["CURRENT_EPREUVE_ID"]
+        currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
+            .first()
+        if currentCode==None:
+            abort(404)
+        currentCode = currentCode.bareme_code
+        a = Baremes.doBaremes(currentCode)
+        return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
+
     def post(self):
         args = self.reqparse.parse_args()
         a = Baremes.doBaremes(args['code'])
         return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
+
+class SetEpreuve(Resource):
+    def __init__(self):
+        super(SetEpreuve,self).__init__()
+
+    def get(self,id):
+        app.config['CURRENT_EPREUVE_ID'] = id
+        tt = epreuve = db.session.query(Epreuve).filter_by(id_epreuve=id).first()
+        print tt
+        if tt == None:
+            abort(404)
+        epr = {
+                'id':epreuve.id_epreuve,
+                'nom':epreuve.nom,
+                'bareme_code':epreuve.bareme_code,
+                'temps_accorde':epreuve.temps_accorde,
+                'nb_serie':epreuve.nb_serie
+            }
+        return {'epreuve':marshal(epr,epreuve_fields)}
 
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
 api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')
@@ -435,3 +480,4 @@ api.add_resource(ParticipantList,app.config['REST_PATH']+'participants/<int:id_e
 api.add_resource(ParticipantSingle,app.config['REST_PATH']+'participant/<int:id>',endpoint='participant')
 api.add_resource(BaremesList,app.config['REST_PATH']+'baremes',endpoint='baremes')
 api.add_resource(Bareme,app.config['REST_PATH']+'bareme',endpoint='bareme')
+api.add_resource(SetEpreuve,app.config['REST_PATH']+'setepreuve/<int:id>',endpoint='set_epreuve')

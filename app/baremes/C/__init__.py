@@ -1,8 +1,9 @@
 # coding=utf-8
 from app import app
 from app import db
-from app.models import Participant,Epreuve
+from app.models import Participant,Epreuve,Baremes
 from sqlalchemy import desc
+from math import ceil
 
 __author__ = 'chassotce'
 def classement(epreuve):
@@ -22,61 +23,98 @@ def classement(epreuve):
         etat2 = ""
         min_t = 0
         min_t2 = 0
+        min_p = 0
+        min_p2 = 0
         num_s1 = 0
         num_s2 = 0
         r=1
+
+        participant=[]
+        for part in p:
+            point_init = part.points_init
+            point_barr = part.points_barr
+            point_barr2 = part.points_barr2
+            temps_init = part.temps_init
+            temps_barr = part.temps_barr
+            temps_barr2 = part.temps_barr2
+            temps_init += point_init * 100
+            temps_barr += point_barr * 100
+            temps_barr2 += point_barr2 * 100
+            point_barr = point_barr2 = point_init =0
+
+            pa = {
+                'id':part.id_participant,
+                'num_depart': part.num_depart,
+                'nom_monture': part.nom_monture,
+                'nom_cavalier': part.nom_cavalier,
+                'points_init': point_init,
+                'temps_init':temps_init,
+                'etat_init':part.etat_init,
+                'points_barr': point_barr,
+                'temps_barr':temps_barr,
+                'etat_barr':part.etat_barr,
+                'points_barr2': point_barr2,
+                'temps_barr2':temps_barr2,
+                'etat_barr2':part.etat_barr2,
+                'hc':part.hc,
+                'serie':part.serie,
+                'id_epreuve': part.id_epreuve
+            }
+            participant.append(pa)
+        #p =  sorted(participant, key=lambda k: (k['etat_init'],k['points_init'],k['temps_init']))
+
+        p=Baremes.multikeysort(participant, ['-etat_init','temps_init'])
         for pa in p:
-            serie = pa.serie
+            serie = pa['serie']
             if delta ==2 :
                 if i%2 == 0:
                     serie = 2
                     num_s2 +=1
-                    if pa.temps_init == min_t2 and pa.etat_init == etat2:
+                    if pa['temps_init'] == min_t2 and etat2 == pa['etat_init']:
                         r -= 1
                     else :
-                        min_t2 = pa.temps_init
-                        etat2 = pa.etat_init
+                        min_t2 = pa['temps_init']
+                        etat2 = pa['etat_init']
                         r = num_s2
                 else:
                     num_s1 +=1
-                    if pa.temps_init == min_t and pa.etat_init == etat1:
+                    if pa['temps_init'] == min_t and etat1 == pa['etat_init']:
                         r -= 1
                     else :
-                        min_t = pa.temps_init
-                        etat1 = pa.etat_init
+                        min_t = pa['temps_init']
+                        etat1 = pa['etat_init']
                         r = num_s1
 
             else:
-                if pa.temps_init == min_t and etat1 == pa.etat_init:
+                if pa['temps_init'] == min_t and etat1 == pa['etat_init']:
                     r -=1
                 else:
-                    min_t = pa.temps_init
-                    etat1 = pa.etat_init
+                    min_t = pa['temps_init']
+                    etat1 = pa['etat_init']
                     r = i
-            cl = (r <= ((tot/delta) *app.config['NUMBER_OF_CL']))
+            cl = (r <= ceil(((tot/delta) *app.config['NUMBER_OF_CL'])))
             pa = {
                 'rang': r,
                 'cl' : cl,
-                'id':pa.id_participant,
-                'num_depart': pa.num_depart,
-                'nom_monture': pa.nom_monture,
-                'nom_cavalier': pa.nom_cavalier,
-                'points_init': pa.points_init,
-                'temps_init':pa.temps_init,
-                'etat_init':pa.etat_init,
-                'points_barr': pa.points_barr,
-                'temps_barr':pa.temps_barr,
-                'etat_barr':pa.etat_barr,
-                'points_barr2': pa.points_barr2,
-                'temps_barr2':pa.temps_barr2,
-                'etat_barr2':pa.etat_barr2,
-                'hc':pa.hc,
+                'id':pa['id'],
+                'num_depart': pa['num_depart'],
+                'nom_monture': pa['nom_monture'],
+                'nom_cavalier': pa['nom_cavalier'],
+                'points_init': pa['points_init'],
+                'temps_init':pa['temps_init'],
+                'etat_init':pa['etat_init'],
+                'points_barr': pa['points_barr'],
+                'temps_barr':pa['temps_barr'],
+                'etat_barr':pa['etat_barr'],
+                'points_barr2': pa['points_barr2'],
+                'temps_barr2':pa['temps_barr2'],
+                'etat_barr2':pa['etat_barr2'],
+                'hc':pa['hc'],
                 'serie':serie,
-                'id_epreuve': pa.id_epreuve
+                'id_epreuve': pa['id_epreuve']
             }
             res.append(pa)
             if (i % delta)==0 :
-                print i%delta
                 r +=1
             i +=1
         z+=1

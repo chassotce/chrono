@@ -4,6 +4,7 @@ from app import app
 from app import db
 from app.models import Participant,Epreuve
 from sqlalchemy import desc
+from math import ceil
 
 def classement(epreuve):
     e = db.session.query(Epreuve).filter_by(id_epreuve=epreuve).one()
@@ -11,7 +12,8 @@ def classement(epreuve):
     z=1
     res = []
     while z<=n:
-        p = db.session.query(Participant).filter_by(id_epreuve = epreuve,hc=False,serie=z).filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO'])\
+        p = db.session.query(Participant).filter_by(id_epreuve = epreuve,hc=False,serie=z)\
+            .filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO'])\
             .order_by(desc(Participant.etat_init)).order_by(Participant.points_init).all()
         tot = len(p)
         delta = 1
@@ -53,7 +55,7 @@ def classement(epreuve):
                     min_p = pa.points_init
                     etat1 = pa.etat_init
                     r = i
-            cl = (r <= ((tot/delta) *app.config['NUMBER_OF_CL']))
+            cl = (r <= ceil(((tot/delta) *app.config['NUMBER_OF_CL'])))
             pa = {
                 'rang': r,
                 'cl' : cl,
@@ -76,7 +78,6 @@ def classement(epreuve):
             }
             res.append(pa)
             if (i % delta)==0 :
-                print i%delta
                 r +=1
             i +=1
         z+=1
