@@ -4,8 +4,9 @@ from app import db
 from app.models import Participant,Epreuve,Baremes
 from sqlalchemy import desc
 from math import ceil
-
 __author__ = 'chassotce'
+
+
 def classement(epreuve):
     e = db.session.query(Epreuve).filter_by(id_epreuve=epreuve).one()
     n = e.nb_serie
@@ -28,7 +29,6 @@ def classement(epreuve):
         num_s1 = 0
         num_s2 = 0
         r=1
-
         participant=[]
         for part in p:
             point_init = part.points_init
@@ -93,6 +93,10 @@ def classement(epreuve):
                     etat1 = pa['etat_init']
                     r = i
             cl = (r <= ceil(((tot/delta) *app.config['NUMBER_OF_CL'])))
+            print "asdfasdf",ceil(((tot/delta) *app.config['NUMBER_OF_CL']))
+            print (tot/delta)
+            print tot,delta
+            print app.config['NUMBER_OF_CL']
             pa = {
                 'rang': r,
                 'cl' : cl,

@@ -80,6 +80,7 @@ class Config(Resource):
 
     def put(self):
         args = self.reqparse.parse_args()
+        print args['tmp_charge_chrono'],args['tmp_aff_temps'],args['tmp_aff_class'],args['pen_tmps_depasse']
         with open(app.config['CONFIG_FILE'], "r+") as configfile:
             data = load(configfile)
             app.config['TMP_CHARGE_CHRONO'] = data['tmp_charge_chrono'] = args['tmp_charge_chrono']
@@ -90,10 +91,12 @@ class Config(Resource):
             configfile.truncate()
         configfile.close()
         app.config['A_TEMPS_DEPASSE'] = args['pen_tmps_depasse']
-        app.config['A_TEMPS_DEPASSE_BARR'] = result['pen_tmps_depasse_barr']
-        app.config['A_TEMPS_DEPASSE_2PHASE'] = result['pen_tmps_depasse_2_phase']
-        app.config['SEND_AFF'] = result['send_aff']
-        return {'config':marshal(data, config_fields)}
+        app.config['A_TEMPS_DEPASSE_BARR'] = args['pen_tmps_depasse_barr']
+        app.config['A_TEMPS_DEPASSE_2PHASE'] = args['pen_tmps_depasse_2_phase']
+        app.config['SEND_AFF'] = args['send_aff']
+        print args['tmp_charge_chrono'],args['tmp_aff_temps'],args['tmp_aff_class'],args['pen_tmps_depasse'],\
+            args['pen_tmps_depasse_barr'],args['pen_tmps_depasse_2_phase'],args['send_aff']
+        return {'config':marshal(args, config_fields)}
 
     def options(self):
         return {'Allow' : 'GET,PUT' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET' }
@@ -106,6 +109,10 @@ class Compet(Resource):
             for line in con.iterdump():
                 f.write('%s\n' % line)
         con.close()
+        db.metadata.tables.items()
+        for name,table in db.metadata.tables.items():
+            table.delete()
+        db.drop_all()
         db.create_all()
         return {'success':'true'}
 
@@ -113,6 +120,7 @@ class Compet(Resource):
         return {'Allow' : 'GET' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'GET' }
 
 epreuve_fields = {
+    'id' : fields.Integer,
     'nom': fields.String,
     'bareme_code': fields.String,
     'temps_accorde': fields.Integer,
@@ -169,7 +177,7 @@ class EpreuveSingle(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('nom', type = str, location = 'json')
-        self.reqparse.add_argument('bareme_code', type = int, location = 'json')
+        self.reqparse.add_argument('bareme_code', type = str, location = 'json')
         self.reqparse.add_argument('temps_accorde', type = str, location = 'json')
         self.reqparse.add_argument('nb_serie', type = int, location = 'json')
         super(EpreuveSingle, self).__init__()
@@ -189,6 +197,7 @@ class EpreuveSingle(Resource):
 
     def put(self,id):
         args = self.reqparse.parse_args()
+        print args['bareme_code']
         if args['nb_serie']< 1:
             args['nb_serie'] = 1
         epr = {
@@ -212,9 +221,10 @@ class EpreuveSingle(Resource):
         return { 'result': True }
 
     def options(self):
-        return {'Allow' : 'GET,PUT' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET' }
+        return {'Allow' : 'GET,PUT,DELETE' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET,DELETE' }
 
 participant_fields = {
+    'id':fields.Integer,
     'num_depart': fields.Integer,
     'nom_monture': fields.String,
     'nom_cavalier': fields.String,
@@ -234,6 +244,7 @@ participant_fields = {
 }
 
 participant_fields_rang = {
+    'id':fields.Integer,
     'rang':fields.Integer,
     'cl':fields.Boolean,
     'num_depart': fields.Integer,
@@ -404,7 +415,7 @@ class ParticipantSingle(Resource):
             'id_epreuve': args['id_epreuve']
             }
         print part
-        tt = db.session.query(Participant).filter_by(id_epreuve=id).update({"num_depart":args['num_depart'],\
+        tt = db.session.query(Participant).filter_by(id_participant=id).update({"num_depart":args['num_depart'],\
             "nom_monture":args['nom_monture'],"nom_cavalier":args['nom_cavalier']\
             ,"points_init":args['points_init'],"temps_init":args['temps_init'],"etat_init":args['etat_init']\
             ,"points_barr":args['points_barr'],"temps_barr":args['temps_barr'],"etat_barr":args['etat_barr']\
@@ -439,7 +450,6 @@ class Bareme(Resource):
         super(Bareme, self).__init__()
 
     def get(self):
-        print 'app.config["CURRENT_EPREUVE_ID"]',app.config["CURRENT_EPREUVE_ID"]
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"])\
             .first()
         if currentCode==None:
@@ -451,6 +461,7 @@ class Bareme(Resource):
     def post(self):
         args = self.reqparse.parse_args()
         a = Baremes.doBaremes(args['code'])
+
         return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
 
 class SetEpreuve(Resource):
@@ -472,12 +483,32 @@ class SetEpreuve(Resource):
             }
         return {'epreuve':marshal(epr,epreuve_fields)}
 
+class CurrentEpreuve(Resource):
+    def __init__(self):
+        super(CurrentEpreuve,self).__init__()
+
+    def get(self):
+        id = app.config['CURRENT_EPREUVE_ID']
+        print id
+        tt = epreuve = db.session.query(Epreuve).filter_by(id_epreuve=id).first()
+        if tt == None:
+            abort(404)
+        epr = {
+                'id':epreuve.id_epreuve,
+                'nom':epreuve.nom,
+                'bareme_code':epreuve.bareme_code,
+                'temps_accorde':epreuve.temps_accorde,
+                'nb_serie':epreuve.nb_serie
+            }
+        return {'epreuve':marshal(epr,epreuve_fields)}
+
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
 api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')
 api.add_resource(EpreuveList,app.config['REST_PATH']+'epreuves',endpoint='epreuves')
-api.add_resource(EpreuveSingle,app.config['REST_PATH']+'epreuves/<int:id>',endpoint='epreuve')
+api.add_resource(EpreuveSingle,app.config['REST_PATH']+'epreuve/<int:id>',endpoint='epreuve')
 api.add_resource(ParticipantList,app.config['REST_PATH']+'participants/<int:id_epreuve>',endpoint='participants')
 api.add_resource(ParticipantSingle,app.config['REST_PATH']+'participant/<int:id>',endpoint='participant')
 api.add_resource(BaremesList,app.config['REST_PATH']+'baremes',endpoint='baremes')
 api.add_resource(Bareme,app.config['REST_PATH']+'bareme',endpoint='bareme')
 api.add_resource(SetEpreuve,app.config['REST_PATH']+'setepreuve/<int:id>',endpoint='set_epreuve')
+api.add_resource(CurrentEpreuve,app.config['REST_PATH']+'currentepreuve',endpoint='current_epreuve')
