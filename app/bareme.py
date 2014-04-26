@@ -33,10 +33,10 @@ class Baremes:
         return getAllBaremes()
 
     @staticmethod
-    def doBaremes(code):
+    def doBaremes(code,id_epreuve):
         a = next((element for element in pluginloader.getPlugins() if element['name'] == code),None)
         z = {}
         if a !=None:
             plugin = pluginloader.loadPlugin(a)
-            z = plugin.classement(app.config['CURRENT_EPREUVE_ID'])
+            z = plugin.classement(id_epreuve)
         return z

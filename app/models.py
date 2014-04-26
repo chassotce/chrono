@@ -446,7 +446,7 @@ class BaremesList(Resource):
 class Bareme(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
-        self.reqparse.add_argument('code',type=str,location='json')
+        self.reqparse.add_argument('epreuve_id',type=int,location='json')
         super(Bareme, self).__init__()
 
     def get(self):
@@ -455,14 +455,22 @@ class Bareme(Resource):
         if currentCode==None:
             abort(404)
         currentCode = currentCode.bareme_code
-        a = Baremes.doBaremes(currentCode)
+        a = Baremes.doBaremes(currentCode,app.config["CURRENT_EPREUVE_ID"])
         return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
 
     def post(self):
         args = self.reqparse.parse_args()
-        a = Baremes.doBaremes(args['code'])
-
+        currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == args['epreuve_id'])\
+            .first()
+        if currentCode==None:
+            abort(404)
+        currentCode = currentCode.bareme_code
+        a = Baremes.doBaremes(currentCode,args['epreuve_id'])
         return {'participants': map(lambda t: marshal(t, participant_fields_rang), a)}
+    def options(self):
+        return {'Allow' : 'GET,POST' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'GET,POST' }
+
+
 
 class SetEpreuve(Resource):
     def __init__(self):
