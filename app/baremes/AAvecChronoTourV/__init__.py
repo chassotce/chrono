@@ -45,6 +45,9 @@ def classement(epreuve):
             point_init = part.points_init
             point_barr = part.points_barr
             point_barr2 = part.points_barr2
+            tmp_init = part.temps_init
+            tmp_barr = part.temps_barr
+            tmp_barr2 = part.temps_barr2
             dif_init = (part.temps_init-(e.temps_accorde*100))/100.0
             dif_barr = (part.temps_barr - (e.temps_accorde*100))/100.0
             dif_barr2 = (part.temps_barr2 - (e.temps_accorde*100))/100.0
@@ -58,19 +61,27 @@ def classement(epreuve):
                 point_barr += point_init
             if part.temps_barr2>0:
                 point_barr2 += point_barr
+
+            if tmp_barr > 0:
+                tmp_init = 0
+                point_init = 0
+            if tmp_barr2 > 0:
+                tmp_barr = 0
+                point_barr = 0
+
             pa = {
                 'id':part.id_participant,
                 'num_depart': part.num_depart,
                 'nom_monture': part.nom_monture,
                 'nom_cavalier': part.nom_cavalier,
                 'points_init': point_init,
-                'temps_init':part.temps_init,
+                'temps_init':tmp_init,
                 'etat_init':part.etat_init,
                 'points_barr': point_barr,
-                'temps_barr':part.temps_barr,
+                'temps_barr':tmp_barr,
                 'etat_barr':part.etat_barr,
                 'points_barr2': point_barr2,
-                'temps_barr2':part.temps_barr2,
+                'temps_barr2':tmp_barr2,
                 'etat_barr2':part.etat_barr2,
                 'hc':part.hc,
                 'serie':part.serie,

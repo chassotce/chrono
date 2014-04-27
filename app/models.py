@@ -217,6 +217,8 @@ class EpreuveSingle(Resource):
         tt= db.session.query(Epreuve).filter_by(id_epreuve=id).delete()
         if tt == 0:
             abort(404)
+        db.session.query(Participant).filter_by(id_epreuve=id).delete()
+
         db.session.commit()
         return { 'result': True }
 
