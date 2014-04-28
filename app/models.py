@@ -1,10 +1,31 @@
 __author__ = 'chassotce'
 from app import db,api,app
+from flask import request
 from flask_restful import Resource, marshal, abort,reqparse,fields
 import json
 from json import load
-from flask import jsonify
+from functools import wraps
 import sqlite3,datetime
+
+keys = []
+
+with open(app.config['API_KEY_FILE']) as file:
+    result = load(file)
+    for v in result.values():
+        keys.append(v)
+file.close()
+print keys
+
+def require_appkey(view_function):
+    @wraps(view_function)
+    # the new, post-decoration function. Note *args and **kwargs here.
+    def decorated_function(*args, **kwargs):
+        print request.args,request.url
+        if request.args.get('key') and request.args.get('key') in keys:
+            return view_function(*args, **kwargs)
+        else:
+            abort(401)
+    return decorated_function
 
 
 class Epreuve(db.Model):
@@ -56,7 +77,7 @@ config_fields = {
 }
 
 class Config(Resource):
-    #decorators = [auth.login_required]
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('tmp_charge_chrono', type = int, location = 'json')
@@ -102,6 +123,7 @@ class Config(Resource):
         return {'Allow' : 'GET,PUT' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,GET' }
 
 class Compet(Resource):
+    @require_appkey
     def get(self):
         con = sqlite3.connect(app.config['DATABASE_LOCATION'])
         backupname = app.config['BACKUP_DIR']+'/'+datetime.datetime.now().strftime("%d-%m-%Y_%H:%M:%S")+'.sql'
@@ -131,6 +153,7 @@ epreuve_fields = {
 epreuves = []
 
 class EpreuveList(Resource):
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('nom', type = str, location = 'json')
@@ -174,6 +197,7 @@ class EpreuveList(Resource):
 
 
 class EpreuveSingle(Resource):
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('nom', type = str, location = 'json')
@@ -268,6 +292,7 @@ participant_fields_rang = {
 }
 
 class ParticipantList(Resource):
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('num_depart', type = int, location = 'json')
@@ -352,6 +377,7 @@ class ParticipantList(Resource):
         return {'Allow' : 'GET,POST' }, 200,{ 'Access-Control-Allow-Origin': '*','Access-Control-Allow-Methods' : 'PUT,POST' }
 
 class ParticipantSingle(Resource):
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('num_depart', type = int, location = 'json')
@@ -442,10 +468,12 @@ class ParticipantSingle(Resource):
 from bareme import Baremes
 
 class BaremesList(Resource):
+    @require_appkey
     def get(self):
         return {'baremes': Baremes.getBaremes()}
 
 class Bareme(Resource):
+    @require_appkey
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument('epreuve_id',type=int,location='json')
@@ -475,6 +503,7 @@ class Bareme(Resource):
 
 
 class SetEpreuve(Resource):
+    @require_appkey
     def __init__(self):
         super(SetEpreuve,self).__init__()
 
@@ -494,6 +523,7 @@ class SetEpreuve(Resource):
         return {'epreuve':marshal(epr,epreuve_fields)}
 
 class CurrentEpreuve(Resource):
+    @require_appkey
     def __init__(self):
         super(CurrentEpreuve,self).__init__()
 
