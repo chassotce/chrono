@@ -542,6 +542,14 @@ class CurrentEpreuve(Resource):
             }
         return {'epreuve':marshal(epr,epreuve_fields)}
 
+class Connection(Resource):
+    @require_appkey
+    def __init__(self):
+        super(Connection,self).__init__()
+
+    def get(self):
+        return {'connection':app.config["CHRONO_CONNECT"]}
+
 api.add_resource(Config, app.config['REST_PATH']+'config', endpoint='config')
 api.add_resource(Compet,app.config['REST_PATH']+'new_compet',endpoint='compet')
 api.add_resource(EpreuveList,app.config['REST_PATH']+'epreuves',endpoint='epreuves')
@@ -552,3 +560,4 @@ api.add_resource(BaremesList,app.config['REST_PATH']+'baremes',endpoint='baremes
 api.add_resource(Bareme,app.config['REST_PATH']+'bareme',endpoint='bareme')
 api.add_resource(SetEpreuve,app.config['REST_PATH']+'setepreuve/<int:id>',endpoint='set_epreuve')
 api.add_resource(CurrentEpreuve,app.config['REST_PATH']+'currentepreuve',endpoint='current_epreuve')
+api.add_resource(Connection,app.config['REST_PATH']+'connection',endpoint='connection')
