@@ -18,7 +18,6 @@ with open(app.config['CONFIG_FILE']) as file:
     app.config['TMP_AFF_TEMPS'] = result['tmp_aff_temps']
     app.config['TMP_AFF_CLASSEMENT'] = result['tmp_aff_class']
 file.close()
-print app.config['TMP_CHARGE_CHRONO']
 
 
 
@@ -27,7 +26,7 @@ import models
 print('__init__')
 if not os.path.exists(app.config['DATABASE_LOCATION']):
     print 'check'
-    db.create_all()
+    print db.create_all()
     print 'yes'
 
 import Rs232capture

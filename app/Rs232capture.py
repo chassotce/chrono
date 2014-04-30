@@ -168,7 +168,7 @@ class RS232captureThread(threading.Thread):
         currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"]) \
             .first().bareme_code
 
-        res = bareme.Baremes.doBaremes(currentCode)
+        res = bareme.Baremes.doBaremes(currentCode,app.config["CURRENT_EPREUVE_ID"])
         infos = next((item for item in res if item["num_depart"] == self.currentNumber),
                      None)  #In case more infos are needed
         rankPacket = self.getRankPacket(infos["rang"])
@@ -256,7 +256,8 @@ class RS232captureThread(threading.Thread):
 
     def run(self):
         while True:
-            self.capture()
+            while self.ser.isOpen():
+                self.capture()
 
 
 

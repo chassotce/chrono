@@ -40,8 +40,8 @@ class Participant(db.Model):
     __tablename__ = 'participant'
     id_participant = db.Column(db.Integer, primary_key=True)
     num_depart = db.Column(db.Integer,index=True)
-    nom_monture = db.Column(db.String(32))
-    nom_cavalier = db.Column(db.String(32))
+    nom_monture = db.Column(db.String(32),default=" ")
+    nom_cavalier = db.Column(db.String(32),default=" ")
     points_init = db.Column(db.Integer,index=True,default=0)
     temps_init = db.Column(db.Integer,default=0)
     etat_init = db.Column(db.Enum("undef", "elimine", "abandon"),name='etat_init',default="undef")
