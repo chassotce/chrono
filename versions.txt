@@ -1,6 +1,5 @@
 Flask==0.10.1
 flask-restful==0.2.3
-flask-httpauth==2.2.1
 SQLAlchemy==0.9.4
 flask-sqlalchemy==1.0
 pyserial==2.7

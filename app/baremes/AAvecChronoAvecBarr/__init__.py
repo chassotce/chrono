@@ -211,7 +211,7 @@ def classement(epreuve):
                 r +=1
             i +=1
         z+=1
-    print res
+    #print res
     #print ((item['rang'],item['temps_init'],item['points_init']) for item in res if item["num_depart"] == 2).next()
     return res
 

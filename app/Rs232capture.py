@@ -69,23 +69,24 @@ class RS232captureThread(threading.Thread):
         return "000000" "bd" + "0000000000000000000000ff"  #dE at the start
 
     def checkRunner(self):
-        checkingRunner = db.session.query(Participant).filter(Participant.num_depart == self.currentNumber
-                                                              and Participant.id_epreuve == app.config[
-                                                                  "CURRENT_EPREUVE_ID"])
+        checkingRunner = db.session.query(Participant).filter_by(num_depart =self.currentNumber \
+            ,id_epreuve =app.config["CURRENT_EPREUVE_ID"])
         if "True" in str(db.session.query(checkingRunner.exists()).all()):
+            print "exist",app.config["CURRENT_EPREUVE_ID"]
+            print checkingRunner
             return
         else:
             runnerToAdd = Participant(
                 num_depart=self.currentNumber, id_epreuve=app.config["CURRENT_EPREUVE_ID"])
             db.session.add(runnerToAdd)
             db.session.commit()
+            print "not existe",runnerToAdd.id_epreuve
             return
 
 
     def getRunner(self):
-        return db.session.query(Participant).filter(Participant.num_depart == self.currentNumber
-                                                    and Participant.id_epreuve == app.config[
-                                                        "CURRENT_EPREUVE_ID"]).first()
+        return db.session.query(Participant).filter_by(num_depart =self.currentNumber \
+            ,id_epreuve =app.config["CURRENT_EPREUVE_ID"]).first()
 
     def checkPCCommand(self):
 
@@ -165,10 +166,11 @@ class RS232captureThread(threading.Thread):
         self.ser.setRTS(True)
         print "RTS set on true. Now displaying for runner number : ", self.currentNumber
 
-        currentCode = db.session.query(Epreuve).filter(Epreuve.id_epreuve == app.config["CURRENT_EPREUVE_ID"]) \
+        currentCode = db.session.query(Epreuve).filter_by(id_epreuve = app.config["CURRENT_EPREUVE_ID"]) \
             .first().bareme_code
-
+        print currentCode
         res = bareme.Baremes.doBaremes(currentCode,app.config["CURRENT_EPREUVE_ID"])
+        print res
         infos = next((item for item in res if item["num_depart"] == self.currentNumber),
                      None)  #In case more infos are needed
         rankPacket = self.getRankPacket(infos["rang"])
@@ -209,9 +211,13 @@ class RS232captureThread(threading.Thread):
         print "Current Number : {0} , current time : {1} , current penalties : {2}".format(str(self.currentNumber),
                                                                                            str(currentTime),
                                                                                            str(currentPen))
-        self.checkRunner()
-        currentRunner = self.getRunner()
 
+        self.checkRunner()
+        print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
+        currentRunner = self.getRunner()
+        print "epreuve currentRunner",currentRunner.id_epreuve
+        print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
+        print "epreuve currentRunner",currentRunner.id_epreuve
         if currentRunner.temps_init is None or currentRunner.temps_init is 0:
             print "Time_init will be added"
             currentRunner.points_init = currentPen
