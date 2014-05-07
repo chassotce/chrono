@@ -14,13 +14,10 @@ with open(app.config['API_KEY_FILE']) as file:
     for v in result.values():
         keys.append(v)
 file.close()
-print keys
 
 def require_appkey(view_function):
     @wraps(view_function)
-    # the new, post-decoration function. Note *args and **kwargs here.
     def decorated_function(*args, **kwargs):
-        print request.args,request.url
         if request.args.get('key') and request.args.get('key') in keys:
             return view_function(*args, **kwargs)
         else:
@@ -57,7 +54,6 @@ class Participant(db.Model):
 
 def add_bdd():
     epreuve = Epreuve(nom='mon_epreuve',bareme_code=1,temps_accorde=10,nb_serie=1)
-    print(epreuve.nom)
     db.session.add(epreuve)
     db.session.commit()
 
@@ -101,7 +97,6 @@ class Config(Resource):
 
     def put(self):
         args = self.reqparse.parse_args()
-        print args['tmp_charge_chrono'],args['tmp_aff_temps'],args['tmp_aff_class'],args['pen_tmps_depasse']
         with open(app.config['CONFIG_FILE'], "r+") as configfile:
             data = load(configfile)
             app.config['TMP_CHARGE_CHRONO'] = data['tmp_charge_chrono'] = args['tmp_charge_chrono']
@@ -115,8 +110,6 @@ class Config(Resource):
         app.config['A_TEMPS_DEPASSE_BARR'] = args['pen_tmps_depasse_barr']
         app.config['A_TEMPS_DEPASSE_2PHASE'] = args['pen_tmps_depasse_2_phase']
         app.config['SEND_AFF'] = args['send_aff']
-        print args['tmp_charge_chrono'],args['tmp_aff_temps'],args['tmp_aff_class'],args['pen_tmps_depasse'],\
-            args['pen_tmps_depasse_barr'],args['pen_tmps_depasse_2_phase'],args['send_aff']
         return {'config':marshal(args, config_fields)}
 
     def options(self):
@@ -221,7 +214,6 @@ class EpreuveSingle(Resource):
 
     def put(self,id):
         args = self.reqparse.parse_args()
-        print args['bareme_code']
         if args['nb_serie']< 1:
             args['nb_serie'] = 1
         epr = {
@@ -315,7 +307,6 @@ class ParticipantList(Resource):
     def get(self,id_epreuve):
         participants = []
         result = db.session.query(Participant).filter_by(id_epreuve=id_epreuve).all()
-        print result
         for pa in result:
             pa = {
                 'id':pa.id_participant,
@@ -340,8 +331,6 @@ class ParticipantList(Resource):
 
     def post(self,id_epreuve):
         args = self.reqparse.parse_args()
-        print args['id_epreuve']
-        print args['hc']
         if args['serie'] < 1:
             args['serie'] = 1;
         pa = Participant(num_depart=args['num_depart'],nom_monture=args['nom_monture'],nom_cavalier=args['nom_cavalier']\
@@ -370,7 +359,6 @@ class ParticipantList(Resource):
                 'serie':pa.serie,
                 'id_epreuve': pa.id_epreuve
             }
-        print part
         return {'participant':marshal(part, participant_fields)}
 
     def options(self):
@@ -399,7 +387,6 @@ class ParticipantSingle(Resource):
 
     def get(self,id):
         pa = db.session.query(Participant).filter_by(id_participant=id).first()
-        print pa
         part = {
                 'id':pa.id_participant,
                 'num_depart': pa.num_depart,
@@ -442,7 +429,6 @@ class ParticipantSingle(Resource):
             'serie':args['serie'],
             'id_epreuve': args['id_epreuve']
             }
-        print part
         tt = db.session.query(Participant).filter_by(id_participant=id).update({"num_depart":args['num_depart'],\
             "nom_monture":args['nom_monture'],"nom_cavalier":args['nom_cavalier']\
             ,"points_init":args['points_init'],"temps_init":args['temps_init'],"etat_init":args['etat_init']\
@@ -510,7 +496,6 @@ class SetEpreuve(Resource):
     def get(self,id):
         app.config['CURRENT_EPREUVE_ID'] = id
         tt = epreuve = db.session.query(Epreuve).filter_by(id_epreuve=id).first()
-        print tt
         if tt == None:
             abort(404)
         epr = {
@@ -529,7 +514,6 @@ class CurrentEpreuve(Resource):
 
     def get(self):
         id = app.config['CURRENT_EPREUVE_ID']
-        print id
         tt = epreuve = db.session.query(Epreuve).filter_by(id_epreuve=id).first()
         if tt == None:
             abort(404)

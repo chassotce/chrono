@@ -14,14 +14,10 @@ def classement(epreuve):
     while z<=n:
         p = db.session.query(Participant).filter_by(id_epreuve = epreuve,hc=False,serie=z)\
             .filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO']).all()
-
-         #   .order_by(desc(Participant.etat_init)).order_by(Participant.points_init)\
-         #   .order_by(desc(Participant.etat_barr)).order_by(Participant.points_barr)\
-         #   .order_by(desc(Participant.etat_barr2)).order_by(Participant.points_barr2)
         tot = len(p)
         print tot
         delta = 1
-        if app.config['MIN_VALUE_SERIE_AUTO'] <= tot <= app.config['MAX_VALUE_SERIE_AUTO']:
+        if app.config['MIN_VALUE_SERIE_AUTO'] < tot <= app.config['MAX_VALUE_SERIE_AUTO']:
             delta = 2
         i = 1
         min_p = min_t = -1
@@ -88,7 +84,6 @@ def classement(epreuve):
                 'id_epreuve': part.id_epreuve
             }
             participant.append(pa)
-        #p =  sorted(participant, key=lambda k: (k['etat_init'],k['points_init'],k['temps_init']))
 
         p=Baremes.multikeysort(participant, ['-etat_init','points_init','temps_init','-etat_barr','points_barr',\
                                              'temps_barr','-etat_barr2','points_barr2','temps_barr2'])
@@ -215,8 +210,6 @@ def classement(epreuve):
                 r +=1
             i +=1
         z+=1
-    #print res
-    #print ((item['rang'],item['temps_init'],item['points_init']) for item in res if item["num_depart"] == 2).next()
     return res
 
 def getDesc():

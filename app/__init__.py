@@ -19,8 +19,6 @@ with open(app.config['CONFIG_FILE']) as file:
     app.config['TMP_AFF_CLASSEMENT'] = result['tmp_aff_class']
 file.close()
 
-
-
 import models
 
 print('__init__')

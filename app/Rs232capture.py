@@ -21,7 +21,7 @@ class RS232captureThread(threading.Thread):
                 bytesize=serial.EIGHTBITS
             )
         except:
-            print "Serial connection problem"
+            #print "Serial connection problem"
             isConnected = False
             time.sleep(5)
 
@@ -29,6 +29,8 @@ class RS232captureThread(threading.Thread):
     currentNumber = 0
     scorePacket = ""
     isRunning = False
+    currentEtat = "undef"
+    hc = False
 
     SYNCHRO = "ff"
     BLANK = "aa"
@@ -39,13 +41,13 @@ class RS232captureThread(threading.Thread):
 
     if ser.isOpen():
         app.config["CHRONO_CONNECT"] = True
-        print "the serial connection is now open"
-    else:
-        print "the serial connection is not opened"
+        #print "the serial connection is now open"
+    #else:
+        #print "the serial connection is not opened"
 
     ser.setDTR(True)  #confirms the connection
     ser.setRTS(False)
-    print "DTR is set on true now and RTS on false"
+    #print "DTR is set on true now and RTS on false"
 
 
     def ishex(self, val):  #from https://coderwall.com/p/bfqwba
@@ -71,17 +73,19 @@ class RS232captureThread(threading.Thread):
     def checkRunner(self):
         checkingRunner = db.session.query(Participant).filter_by(num_depart =self.currentNumber \
             ,id_epreuve =app.config["CURRENT_EPREUVE_ID"])
+        #print "checkrunner"
         if "True" in str(db.session.query(checkingRunner.exists()).all()):
-            print "exist",app.config["CURRENT_EPREUVE_ID"]
-            print checkingRunner
+            #print "exist",app.config["CURRENT_EPREUVE_ID"]
+            #print checkingRunner
             return
         else:
             runnerToAdd = Participant(
                 num_depart=self.currentNumber, id_epreuve=app.config["CURRENT_EPREUVE_ID"])
             db.session.add(runnerToAdd)
             db.session.commit()
-            print "not existe",runnerToAdd.id_epreuve
+            #print "not existe",runnerToAdd.id_epreuve
             return
+        return
 
 
     def getRunner(self):
@@ -90,51 +94,56 @@ class RS232captureThread(threading.Thread):
 
     def checkPCCommand(self):
 
-        currRunner = self.getRunner()
-
         def nothing():
             return
 
         def reset():
-            if self.oldPacket[0] != self.BLANK[0] and self.isRunning:
-                print "Launching saveRunner..."
+            if self.scorePacket is not "" and self.oldPacket[0] != self.BLANK[0] and self.isRunning:
+                #print "Launching saveRunner..."
                 self.saveRunner()
                 if app.config["SEND_AFF"]:
                     self.display()
+            return
 
         def eliminated():
-            if currRunner.temps_init == 0:
-                currRunner.etat_init = "elimine"
-            elif currRunner.temps_barr == 0:
-                currRunner.etat_barr = "elimine"
-            else:
-                currRunner.etat_barr2 = "elimine"
-            db.session.commit()
+               # if currRunner.temps_init == 0:
+               #     currRunner.etat_init = "elimine"
+               # elif currRunner.temps_barr == 0:
+               #     currRunner.etat_barr = "elimine"
+               # else:
+               #     currRunner.etat_barr2 = "elimine"
+            #db.session.commit()
+            self.currentEtat = "elimine"
+            return
 
         def gaveUp():
-            if currRunner.temps_init == 0:
-                currRunner.etat_init = "abandon"
-            elif currRunner.temps_barr == 0:
-                currRunner.etat_barr = "abandon"
-            else:
-                currRunner.etat_barr2 = "abandon"
-            db.session.commit()
+            #if currRunner.temps_init == 0:
+            #    currRunner.etat_init = "abandon"
+            #elif currRunner.temps_barr == 0:
+            #    currRunner.etat_barr = "abandon"
+            #else:
+            #    currRunner.etat_barr2 = "abandon"
+            #db.session.commit()
+            self.currentEtat = "abandon"
+            return
 
         def HC():
-            currRunner.hc = True
-            db.session.commit()
+            self.hc = True
+            return
 
         def changeNumber():
-            if self.oldPacket[6:8].isdigit():
+            if self.oldPacket[6:8].isdigit() and int(self.oldPacket[6:8]) is not 0:
                 self.currentNumber = int(self.oldPacket[6:8])
-                self.checkRunner()
-                print "Number is now : ", self.currentNumber
+                #self.checkRunner()
+                #print "Number is now : ", self.currentNumber
+            return
 
         def IncrNumByHundred():
             self.currentNumber += 100
-            print "Increased Number is now : ", self.currentNumber
+            #print "Increased Number is now : ", self.currentNumber
             time.sleep(0.8)
             self.ser.flushInput()
+            return
 
         def ldbarr():
             self.saveRunner()
@@ -164,81 +173,85 @@ class RS232captureThread(threading.Thread):
         if self.scorePacket is '000000000000000000000000000000':
             return
         self.ser.setRTS(True)
-        print "RTS set on true. Now displaying for runner number : ", self.currentNumber
+        ##print "RTS set on true. Now displaying for runner number : ", self.currentNumber
 
         currentCode = db.session.query(Epreuve).filter_by(id_epreuve = app.config["CURRENT_EPREUVE_ID"]) \
             .first().bareme_code
-        print currentCode
+        ##print currentCode
         res = bareme.Baremes.doBaremes(currentCode,app.config["CURRENT_EPREUVE_ID"])
-        print res
+        ##print res
         infos = next((item for item in res if item["num_depart"] == self.currentNumber),
                      None)  #In case more infos are needed
-        rankPacket = self.getRankPacket(infos["rang"])
-        rankPacket = rankPacket.decode("hex")
+        if infos is not None:
+            rankPacket = self.getRankPacket(infos["rang"])
+            rankPacket = rankPacket.decode("hex")
 
-        time_display = app.config["TMP_AFF_TEMPS"] * 1000
-        rank_display = app.config["TMP_AFF_CLASSEMENT"] * 1000
+            time_display = app.config["TMP_AFF_TEMPS"] * 1000
+            rank_display = app.config["TMP_AFF_CLASSEMENT"] * 1000
 
-        print "Now displaying time"
-        timePacket = (self.scorePacket + "ff")
-        print str(timePacket)
-        timePacket = timePacket.decode("hex")
-        display_time = int(round(time.time() * 1000)) + time_display
+            #print "Now displaying time"
+            timePacket = (self.scorePacket + "ff")
+            ##print str(timePacket)
+            timePacket = timePacket.decode("hex")
+            display_time = int(round(time.time() * 1000)) + time_display
 
-        while display_time > int(round(time.time() * 1000)):  #TODO: Check if that fits the planned time
-            self.ser.write(timePacket)
+            while display_time > int(round(time.time() * 1000)):  #TODO: Check if that fits the planned time
+                self.ser.write(timePacket)
 
-        print "Now displaying Ranking"
+            #print "Now displaying Ranking"
 
-        display_time = int(round(time.time() * 1000)) + rank_display
-        while display_time > int(round(time.time() * 1000)):
-            self.ser.write(rankPacket)
+            display_time = int(round(time.time() * 1000)) + rank_display
+            while display_time > int(round(time.time() * 1000)):
+                self.ser.write(rankPacket)
         self.ser.setRTS(False)
-        print "Display finished. RTS set on false."
+        #print "Display finished. RTS set on false."
         self.scorePacket = ""
         return
 
     def saveRunner(self):
 
         currentPacket = self.scorePacket.replace("a", "0")
-        print "Now working with packet : ", currentPacket
+        #print "Now working with packet : ", currentPacket
 
         currentPen = int(currentPacket[6:8])
         currentTime = int(currentPacket[5] + currentPacket[2:4] + currentPacket[0:2])
         if currentTime < int(app.config["TMP_CHARGE_CHRONO"]) * 100:
             self.scorePacket= '000000000000000000000000000000'
             return
-        print "Current Number : {0} , current time : {1} , current penalties : {2}".format(str(self.currentNumber),
-                                                                                           str(currentTime),
-                                                                                           str(currentPen))
+        #print "Current Number : {0} , current time : {1} , current penalties : {2}".format(str(self.currentNumber),
+                                                                                          # str(currentTime),
+                                                                                           #str(currentPen))
 
         self.checkRunner()
-        print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
+        #print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
         currentRunner = self.getRunner()
-        print "epreuve currentRunner",currentRunner.id_epreuve
-        print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
-        print "epreuve currentRunner",currentRunner.id_epreuve
+        #print "epreuve currentRunner",currentRunner.id_epreuve
+        #print "epreuve courante ",app.config["CURRENT_EPREUVE_ID"]
+        #print "epreuve currentRunner",currentRunner.id_epreuve
         if currentRunner.temps_init is None or currentRunner.temps_init is 0:
-            print "Time_init will be added"
+            #print "Time_init will be added"
             currentRunner.points_init = currentPen
             currentRunner.temps_init = currentTime
-            db.session.commit()
+            currentRunner.etat_init = self.currentEtat
 
         elif currentRunner.temps_barr is None or currentRunner.temps_barr is 0:
-            print "Time_barr will be added"
+            #print "Time_barr will be added"
             currentRunner.points_barr = currentPen
             currentRunner.temps_barr = currentTime
-            db.session.commit()
-
+            currentRunner.etat_barr = self.currentEtat
         else:
-            print "Time_barr2 will be added/modified"
+            #print "Time_barr2 will be added/modified"
             currentRunner.points_barr2 = currentPen
             currentRunner.temps_barr2 = currentTime
-            db.session.commit()
-
+            currentRunner.etat_barr2 = self.currentEtat
         if not app.config["SEND_AFF"]:
             self.isRunning = False
-        return 0
+        if currentRunner.hc is None or currentRunner.hc is not True:
+            currentRunner.hc = self.hc
+        db.session.commit()
+        self.currentEtat = "undef"
+        self.hc = False
+        return
 
     def capture(self):
         currentPacket = ""
@@ -249,16 +262,18 @@ class RS232captureThread(threading.Thread):
         while currentChar != self.SYNCHRO:
             currentPacket += currentChar
             currentChar = self.ser.read(1).encode("hex")
-        print "Packet : ", currentPacket, " acquired"
+        #print "Packet : ", currentPacket, " acquired"
         if currentPacket[0:2] != self.BLANK and currentPacket[0:2] != '00' and currentPacket != '1':
-            print "Saving scorePacket because ", currentPacket[0:2]
+            #print "Saving scorePacket because ", currentPacket[0:2]
             self.scorePacket = currentPacket
             self.isRunning = True
-            print "Scorepacket is : ", self.scorePacket
+            #print "Scorepacket is : ", self.scorePacket
         if self.oldPacket != currentPacket:
             self.oldPacket = currentPacket
             if self.oldPacket[4] != '0' and self.ishex(self.oldPacket[4]):
+                #print "Command detected !!!!"
                 self.checkPCCommand()
+        return
 
     def run(self):
         while True:
