@@ -15,7 +15,6 @@ def classement(epreuve):
         p = db.session.query(Participant).filter_by(id_epreuve = epreuve,hc=False,serie=z)\
             .filter(Participant.temps_init >= app.config['TMP_CHARGE_CHRONO']).all()
         tot = len(p)
-        print tot
         delta = 1
         if app.config['MIN_VALUE_SERIE_AUTO'] < tot <= app.config['MAX_VALUE_SERIE_AUTO']:
             delta = 2

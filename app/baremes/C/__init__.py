@@ -90,10 +90,6 @@ def classement(epreuve):
                     etat1 = pa['etat_init']
                     r = i
             cl = (r <= ceil(((tot/delta) *app.config['NUMBER_OF_CL'])))
-            print "asdfasdf",ceil(((tot/delta) *app.config['NUMBER_OF_CL']))
-            print (tot/delta)
-            print tot,delta
-            print app.config['NUMBER_OF_CL']
             pa = {
                 'rang': r,
                 'cl' : cl,

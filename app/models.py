@@ -52,15 +52,6 @@ class Participant(db.Model):
     serie = db.Column(db.Integer,default=1)
     id_epreuve = db.Column(db.Integer, db.ForeignKey(Epreuve.id_epreuve), nullable=False)
 
-def add_bdd():
-    epreuve = Epreuve(nom='mon_epreuve',bareme_code=1,temps_accorde=10,nb_serie=1)
-    db.session.add(epreuve)
-    db.session.commit()
-
-    participant = Participant(id_epreuve=epreuve.id_epreuve)
-    db.session.add(participant)
-    db.session.commit()
-
 
 config_fields = {
     'tmp_charge_chrono': fields.Integer,
